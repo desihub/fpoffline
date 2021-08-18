@@ -4,6 +4,9 @@ import os
 import json
 import pathlib
 
+# Array of petal_id values indexed by petal_loc=0-9.
+petal_ids = [4, 5, 6, 3, 8, 10, 11, 2, 7, 9]
+
 
 def load_constants(version=None):
     """Load fiber positioner constants.
