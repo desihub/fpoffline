@@ -37,4 +37,4 @@ def load_constants(version=None):
         file = sorted(path.glob('constants-*.json'))[-1]
     with open(file) as f:
         data = json.load(f)
-        return {E['name']: E['constants'] for E in data['elements']}
+    return {elem['name']: elem['constants'] for elem in data['elements']}
