@@ -8,7 +8,8 @@ import numpy as np
 
 import pandas as pd
 
-import fpoffline.const
+import desimeter.transform.pos2ptl
+import desimeter.transform.ptl2fp
 
 
 def load_hwtable(expid, petal_id=None, exp_iter=None, path=None, verbose=False):
@@ -174,15 +175,17 @@ class Scheduler:
             raise ValueError('Only "namiki" gears are supported.')
         self.const = const
         self.calib = calib
+        self.finalized = False
 
-    def plan(self, move, hwtable):
-        """
+    def plan(self, hwtable):
+        """Compute the angular motion specified in a hardware move table.
+
+        Results are stored in the time and angle arrays of our motor_T/P attributes.
+        The computed angles specify changes in the theta, phi angles, as a function
+        of time, that would result assuming no collisions (with a hard stop or
+        other positioner).
         """
         # Convert pandas series to dictionary if necessary.
-        try:
-            move = move.iloc[0].to_dict()
-        except AttributeError:
-            pass
         try:
             hwtable = hwtable.iloc[0].to_dict()
         except AttributeError:
@@ -215,28 +218,75 @@ class Scheduler:
                 self.motor_T.pause(-delta, 1)
         self.motor_T.finalize()
         self.motor_P.finalize()
+        assert self.motor_T.time[-1] == self.motor_P.time[-1]
+        self.duration = self.motor_T.time[-1]
+        self.finalized = True
 
-        # Calculate theta,phi angles [in deg] with theta relative to CS5 +x and phi relative to theta,
-        # such that the move ends up at T=move['pos_t'], P=move['pos_p'].
-        petal_loc = fpoffline.const.PETAL_ID_MAP.index(move['petal_id'])
-        petal_T = (petal_loc - 3) * 36
-        T0 = petal_T + self.calib['offset_t'] + move['pos_t'] - self.motor_T.angle[-1]
-        P0 = self.calib['offset_p'] + move['pos_p'] - self.motor_P.angle[-1]
-        self.time = np.unique(np.concatenate((self.motor_T.time, self.motor_P.time)))
-        self.theta = np.interp(self.time, self.motor_T.time, self.motor_T.angle + T0)
-        self.phi = np.interp(self.time, self.motor_P.time, self.motor_P.angle + P0)
+    def get_path_for_move(self, move):
+        """Wrapper for get_path that uses a move record for the final angles to use.
+        """
+        # Convert pandas series to dictionary if necessary.
+        try:
+            move = move.iloc[0].to_dict()
+        except AttributeError:
+            pass
+        return self.get_path(move['pos_t'], move['pos_p'], external=False)
 
-        # Calculate CS5 coords [in mm] of the theta, phi arm endpoints.
-        tstep = self.const['CREEP_PERIOD'] / self.CLOCK
-        nt = int(np.ceil(self.time[-1] / tstep)) + 1
-        self.t = np.linspace(0, self.time[-1], nt)
-        T = np.interp(self.t, self.time, np.deg2rad(self.theta))
-        TP = np.interp(self.t, self.time, np.deg2rad(self.theta + self.phi))
-        C, S = np.cos(np.deg2rad(petal_T)), np.sin(np.deg2rad(petal_T))
-        x0, y0 = self.calib['offset_x'], self.calib['offset_y']
-        self.x0, self.y0 = x0 * C - y0 * S, x0 * S + y0 * C
-        self.rT, self.rP = self.calib['length_r1'], self.calib['length_r2']
-        self.xT = self.x0 + self.rT * np.cos(T)
-        self.yT = self.y0 + self.rT * np.sin(T)
-        self.xP = self.xT + self.rP * np.cos(TP)
-        self.yP = self.yT + self.rP * np.sin(TP)
+    def get_path(self, t_final, p_final, external=True, max_tstep=0.05):
+        """Calculate the theta and phi arm paths in various coordinate systems.
+
+        Parameters
+        ----------
+        t_final : float
+            Final theta angle in degrees.
+        p_final : float
+            Final phi angle in degrees.
+        external : bool
+            Final angles are external when True, else internal and will be offset
+            by the calibration offset_t,p values.
+        max_tstep : float or None
+            Maximum time step in seconds to use when tabulating the path. When None,
+            no maximum is applied and the returned tabulation exactly captures the
+            angular motion in its most compact form (via linear interpolation), but
+            the (x,y) components might have large jumps.
+        """
+        if not self.finalized:
+            raise RuntimeError('Call the plan() method before calculating a path.')
+        if not external:
+            # Convert from internal to external angles.
+            t_final = desimeter.transform.pos2ptl.int2ext(t_final, self.calib['offset_t'])
+            p_final = desimeter.transform.pos2ptl.int2ext(p_final, self.calib['offset_p'])
+        # The motor rotations are tabulated on independent time grids so combine them
+        # to a common grid now.
+        if max_tstep is None:
+            # Take the union of the two motor grids.
+            self.time = np.unique(np.concatenate((self.motor_T.time, self.motor_P.time)))
+        else:
+            # Use the smallest tstep < max_tstep that evenly divides this motion's duration.
+            nt = int(np.ceil(self.duration / max_tstep)) + 1
+            self.time = np.linspace(0, self.duration, nt)
+            assert self.time[1] <= max_tstep
+        # Interpolate the angles onto the same grid, adjusted to end at t_final, p_final.
+        self.t_ext = np.interp(self.time, self.motor_T.time,
+            t_final + self.motor_T.angle - self.motor_T.angle[-1])
+        self.p_ext = np.interp(self.time, self.motor_P.time,
+            p_final + self.motor_P.angle - self.motor_P.angle[-1])
+        # Convert from angles to petal local (x,y).
+        self.x_loc, self.y_loc = desimeter.transform.pos2ptl.ext2loc(
+            self.t_ext, self.p_ext, self.calib['length_r1'], self.calib['length_r2'])
+        # (xt,yt) refers to the phi axis at the end of the theta arm, calculated by setting r2=0.
+        self.xt_loc, self.yt_loc = desimeter.transform.pos2ptl.ext2loc(
+            self.t_ext, self.p_ext, self.calib['length_r1'], 0)
+        # Convert from local (x,y) to flat (x,y).
+        self.x_flat = desimeter.transform.pos2ptl.loc2flat(self.x_loc, self.calib['offset_x'])
+        self.y_flat = desimeter.transform.pos2ptl.loc2flat(self.y_loc, self.calib['offset_y'])
+        self.xt_flat = desimeter.transform.pos2ptl.loc2flat(self.xt_loc, self.calib['offset_x'])
+        self.yt_flat = desimeter.transform.pos2ptl.loc2flat(self.yt_loc, self.calib['offset_y'])
+        # Convert from flat (x,y) to petal (x,y).
+        self.x_ptl, self.y_ptl = desimeter.transform.pos2ptl.flat2ptl(self.x_flat, self.y_flat)
+        self.xt_ptl, self.yt_ptl = desimeter.transform.pos2ptl.flat2ptl(self.xt_flat, self.yt_flat)
+        # Convert from petal (x,y) to focal plane (x,y,z).
+        self.x_fp, self.y_fp, self.z_fp = desimeter.transform.ptl2fp.ptl2fp(
+            self.calib['petal_loc'], self.x_ptl, self.y_ptl)
+        self.xt_fp, self.yt_fp, self.zt_fp = desimeter.transform.ptl2fp.ptl2fp(
+            self.calib['petal_loc'], self.xt_ptl, self.yt_ptl)
