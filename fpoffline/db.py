@@ -7,9 +7,7 @@ import pandas as pd
 import desimeter.transform.pos2ptl
 import desimeter.transform.ptl2fp
 
-
-# Array of petal_id values indexed by petal_loc=0-9.
-petal_ids = [4, 5, 6, 3, 8, 10, 11, 2, 7, 9]
+import fpoffline.const
 
 
 def get_calib(DB, at=None, verbose=True):
@@ -31,7 +29,7 @@ def get_calib(DB, at=None, verbose=True):
         petal_loc, offset_x,y_cs5 and location=1000*petal_loc+device_loc.
     """
     tables = []
-    for petal_loc, petal_id in enumerate(petal_ids):
+    for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
         table_name = f'posmovedb.positioner_calibration_p{petal_id}'
         before = '' if at is None else f" where time_recorded<=TIMESTAMP '{pd.Timestamp(at)}'"
         sql = f'''
@@ -84,7 +82,7 @@ def get_moves(DB, at=None, expid=None, maxrows=10000, verbose=True):
         print('do not specify expid and at params')
         return
     before = '' if at is None else f" where time_recorded<=TIMESTAMP '{pd.Timestamp(at)}'"
-    for petal_loc, petal_id in enumerate(petal_ids):
+    for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
         table_name = f'posmovedb.positioner_moves_p{petal_id}'
         if expid is not None:
             sql = f'''
