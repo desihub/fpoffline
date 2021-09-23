@@ -30,7 +30,7 @@ import desimeter.transform.pos2ptl as pos2ptl
 DESI_DATABASE = "desi_dev"
 DESI_DBUSER = "desi_reader"
 DESI_DBHOST = "db.replicator.dev-cattle.stable.spin.nersc.org"
-DESI_DBPASSWORD = "reader"
+DESI_DBPASSWORD = ""
 DESI_DBPORT = 60042
 MOVE_RE = re.compile(r".*(creep|cruise) (\-?\d+\.?\d*)")
 T_MOVE_BINS = np.arange(-100, 100, 5)
