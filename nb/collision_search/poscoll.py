@@ -46,8 +46,8 @@ CONFIG_TEMPLATE = (
 
 logging.basicConfig(format="%(asctime)s %(message)s")
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel("DEBUG")
-LOGGER.info("Starting")
+LOGGER.setLevel("INFO")
+LOGGER.info("Importing poscoll")
 
 # Interface functions
 
@@ -185,13 +185,16 @@ def find_night_fvcprocs(night_mjd, config_template=CONFIG_TEMPLATE):
     return positioner_corr_fnames
 
 
-def read_night_positions(night_mjd):
+def read_night_positions(night):
     """Read fiber positions from positioner-corr files for a night.
 
     Parameters
     ----------
-    night_mjd : `int`
-        The MJD of the night for which to read positions
+    night : `int` or `str`
+        The MJD of the night for which to read positions. If it is a
+        string, it is interpereted as an iso date string (YYYY-MM-DD).
+        If it is an integer, it is take to be the
+        Modified Julian Date (MJD).
 
     Returns
     -------
@@ -199,8 +202,14 @@ def read_night_positions(night_mjd):
         A table of position data
 
     """
+    try:
+        night_mjd = Time(night, format="mjd", scale="utc").mjd
+    except ValueError:
+        night_mjd = Time(night, scale="utc").mjd
+
     pos_corr_fnames = find_night_fvcprocs(night_mjd)
     if len(pos_corr_fnames) < 1:
+        LOGGER.debug("No positioner files found for MJD %i", night_mjd)
         return None
 
     position_dfs = []
@@ -208,6 +217,19 @@ def read_night_positions(night_mjd):
         positions = pd.read_table(
             fname, skiprows=(1, 2, 3), delim_whitespace=True
         )
+        if "FLAGS" in positions:
+            LOGGER.debug(
+                "Read %s positions from %s",
+                len(positions),
+                os.path.basename(fname),
+            )
+        else:
+            LOGGER.debug(
+                "Read %s positions from %s, but there was no FLAGS column",
+                len(positions),
+                os.path.basename(fname),
+            )
+
         positions.rename(
             columns={
                 "#PETAL_LOC": "petal_loc",
@@ -227,6 +249,7 @@ def read_night_positions(night_mjd):
 
     positions = pd.concat(position_dfs)
     if "flags" not in positions:
+        LOGGER.info("No files for MJD %i had a FLAGS column", night_mjd)
         return None
 
     positions = positions.query("(obs_x != 0.0) or (obs_y != 0.0)").copy()
@@ -265,21 +288,6 @@ def read_night_positions(night_mjd):
 
     positions["night_mjd"] = night_mjd
 
-    positions["night"] = pd.to_datetime(
-        Time(night_mjd, format="mjd", scale="utc").datetime64
-    )
-
-    positions["expid"] = (
-        positions.reset_index()
-        .fname.str.extract(r".*positioner-corr-([0-9]+)\.[0-9]+.dat")
-        .values.astype(int)
-    )
-    positions["configid"] = (
-        positions.reset_index()
-        .fname.str.extract(r".*positioner-corr-[0-9]+\.([0-9]+).dat")
-        .values.astype(int)
-    )
-
     positions.reset_index(inplace=True)
     positions.set_index(
         #            ["night_mjd", "petal_loc", "device_loc", "fname", "row"]
@@ -294,6 +302,8 @@ def read_night_positions(night_mjd):
         inplace=True,
     )
 
+    positions.sort_index(inplace=True)
+    
     return positions
 
 
@@ -302,8 +312,8 @@ def read_many_nights(nights=None, num_nights=None, move_thresh=None):
 
     Parameters
     ----------
-    nights : `list` of `[int]`
-        A list of MJDs of nights to read
+    nights : `pandas.DataFrame`
+        A DataFrame with a row for each night to consider
     num_nights : `int` or None
         If not None, pick num_nights nights randomly and read only those.
     move_thresh : `float`
@@ -323,14 +333,25 @@ def read_many_nights(nights=None, num_nights=None, move_thresh=None):
     )
     night_position_dfs = []
     for night_mjd in these_nights.night_mjd:
-        LOGGER.info(f"Reading {night_mjd}")
+        LOGGER.debug(f"Reading {night_mjd}")
         try:
             full_night_position_df = read_night_positions(night_mjd)
+            if full_night_position_df is None:
+                LOGGER.debug("No positions read for %s", night_mjd)
+                continue
+            else:
+                positions_read = len(full_night_position_df)
+                LOGGER.debug(
+                    "Read %i positions for MJD %i",
+                    positions_read,
+                    night_mjd,
+                )
         except PermissionError:
-            print(f"Permission error on {night_mjd}")
+            LOGGER.warning("Permission error on %i", night_mjd)
             continue
 
         if full_night_position_df is None:
+            LOGGER.debug("No positions read for %s", night_mjd)
             continue
 
         night_position_df = full_night_position_df.query(
@@ -343,22 +364,33 @@ def read_many_nights(nights=None, num_nights=None, move_thresh=None):
             keep = (
                 night_position_df.query(f"obs_diff>{move_thresh}")
                 .reset_index()
-                .set_index(["petal_loc", "device_loc"])
+                .set_index(["night_mjd", "petal_loc", "device_loc"])
                 .index.drop_duplicates()
             )
+            LOGGER.debug("%i positioners to keep", len(keep))
             if len(keep) > 0:
                 night_position_df["keep"] = pd.DataFrame(
                     {"keep": True}, index=keep
                 )
                 night_position_df.dropna(inplace=True)
                 night_position_df.drop(columns="keep", inplace=True)
+                LOGGER.debug("%i positions kept", len(night_position_df))
             else:
                 # Nothing to keep, so drop all rows
+                LOGGER.debug("No positions kept")
                 night_position_df = night_position_df.iloc[0:0]
 
         night_position_df = night_position_df.copy()
         # deal with pandas view/copy awkwardness
         night_position_dfs.append(night_position_df)
+
+        LOGGER.info(
+            "Read %i positions, kept %i for MJD %i (%s)",
+            positions_read,
+            len(night_position_df),
+            night_mjd,
+            Time(night_mjd, format="mjd", scale="utc").iso[:10],
+        )
 
     if len(night_position_dfs) > 0:
         positions = pd.concat(night_position_dfs)
@@ -408,11 +440,15 @@ def plot_pos(night_mjd, petal_loc, device_loc, positions):
         Tuple with `matplotlib.Figure` and `matplotlib.Axes`
 
     """
-    these_positions = positions.loc[(night_mjd, petal_loc, device_loc)].copy()
+    these_positions = (
+        positions.loc[(night_mjd, petal_loc, device_loc)].sort_index().copy()
+    )
     night = these_positions["night"][0]
     label = f"Petal {petal_loc} device {device_loc} on {str(night)[:11]}"
+
     these_positions["fvc"] = (
-        these_positions["expid"] + these_positions["configid"] / 100
+        these_positions.index.get_level_values("expid")
+        + these_positions.index.get_level_values("configid") / 100
     )
     fig, axes = plt.subplots(1, 3, figsize=(8 * 3, 5))
 
@@ -434,14 +470,17 @@ def plot_pos(night_mjd, petal_loc, device_loc, positions):
 
 
 def plot_path_with_neighbors(
-    night_mjd, petal_loc, device_loc, plot_size=20, night_positions=None
+    night, petal_loc, device_loc, plot_size=20, night_positions=None
 ):
     """Plot the measured positions for a positioner on a night.
 
     Parameters
     ----------
-    night_mjd : `int`
-        The Modified Julian Date of the night to plot
+    night : `int` or `str`
+        The MJD of the night for which to read positions, if an
+        integer.  If it is a string, it is interpereted as an iso date
+        string (YYYY-MM-DD).  If it is an integer, it is take to be
+        the Modified Julian Date (MJD).
     petal_loc : `int`
         The petal location
     device_loc : `int`
@@ -459,13 +498,18 @@ def plot_path_with_neighbors(
         Tuple with `matplotlib.Figure` and `matplotlib.Axes`
 
     """
+    try:
+        night_mjd = Time(night, format="mjd", scale="utc").mjd
+    except ValueError:
+        night_mjd = Time(night, scale="utc").mjd
+
     logging.info(f"Loading night of {night_mjd}")
 
     if night_positions is None:
         night_positions = read_night_positions(night_mjd)
 
     night = str(night_positions["night"].iloc[0])[:10]
-    this_petal_positions = night_positions.loc[petal_loc]
+    this_petal_positions = night_positions.loc[night_mjd, petal_loc]
 
     print(f"{night_mjd}, {petal_loc}, {device_loc}")
 
@@ -478,7 +522,8 @@ def plot_path_with_neighbors(
 
     these_positions = this_petal_positions.loc[device_loc].copy()
     these_positions["fvc"] = (
-        these_positions["expid"] + these_positions["configid"] / 100
+        these_positions.index.get_level_values("expid")
+        + these_positions.index.get_level_values("configid") / 100
     )
     these_positions.plot("obs_x", "obs_y", marker="o", ax=ax, label=device_loc)
     ax.set_ylabel("obs_y")
