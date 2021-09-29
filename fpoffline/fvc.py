@@ -2,6 +2,8 @@
 """
 import numpy as np
 
+import scipy.stats
+
 import skimage.exposure
 
 
@@ -63,3 +65,13 @@ def process_front_illuminated(D):
     D /= hi - lo
     # Perform local contrast enhancement.
     return skimage.exposure.equalize_adapthist(D, clip_limit=0.005, nbins=1<<18)
+
+
+def process_back_illuminated(D, nsig=4):
+    """Perform bias & dark currrent subtraction then apply an arcsinh
+    stretch and clip any low tail. The result has min=-1 and mean~0.
+    """
+    D = measure_subtract_bias(D, plot=False)
+    clipped, _, _ = scipy.stats.sigmaclip(flat, nsig, nsig)
+    mu, sig = clipped.mean(), clipped.std()
+    return np.arcsinh(np.clip((data - mu) / (nsig * sig), -1, None))
