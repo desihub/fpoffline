@@ -72,6 +72,6 @@ def process_back_illuminated(D, nsig=4):
     stretch and clip any low tail. The result has min=-1 and mean~0.
     """
     D = measure_subtract_bias(D, plot=False)
-    clipped, _, _ = scipy.stats.sigmaclip(flat, nsig, nsig)
+    clipped, _, _ = scipy.stats.sigmaclip(D, nsig, nsig)
     mu, sig = clipped.mean(), clipped.std()
-    return np.arcsinh(np.clip((data - mu) / (nsig * sig), -1, None))
+    return np.arcsinh(np.clip((D - mu) / (nsig * sig), -1, None))
