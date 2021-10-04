@@ -6,6 +6,8 @@ import scipy.stats
 
 import skimage.exposure
 
+import matplotlib.pyplot as plt
+
 
 def measure_subtract_bias(D, plot=False):
     """Measure and subtract the mean bias (and dark current) in each half image.
@@ -74,4 +76,26 @@ def process_back_illuminated(D, nsig=4):
     D = measure_subtract_bias(D, plot=False)
     clipped, _, _ = scipy.stats.sigmaclip(D, nsig, nsig)
     mu, sig = clipped.mean(), clipped.std()
-    return np.arcsinh(np.clip((D - mu) / (nsig * sig), -1, None))
+    return np.arcsinh(np.clip((D - mu) / (nsig * sig), 0, None))
+
+
+def plot_fvc(data, color='cividis', save=None):
+    """Plot an FVC image at full size (6000,6000) in the usual orientation.
+    """
+    dpi = 100
+    h, w = data.shape
+    fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi, frameon=False)
+    ax = plt.axes((0, 0, 1, 1))
+    if len(color)==3:
+        # Interpret as RGB tint to apply to scalar values.
+        color=np.asarray(color).reshape(1,1,3)
+        data = color * (np.expand_dims(data,-1) - data.min()) / (data.max() - data.min())
+        cmap = None
+    else:
+        cmap = color
+    ax.imshow(data[:,::-1], origin='lower', interpolation='none', cmap=cmap)
+    ax.axis('off')
+    if save:
+        plt.savefig(save)
+        plt.close(fig)
+    return fig, ax
