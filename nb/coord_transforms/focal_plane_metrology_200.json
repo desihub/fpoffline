@@ -1,0 +1,158 @@
+{   
+    "type":     "group",
+    "name":     "focal_plane_metrology",
+    "version":  200,
+    "elements": [
+        
+            
+            {   
+                "name":         "0",
+                "version":      76298,
+                "constants":    {
+    "petal_id":4,
+    "petal_offset_x":0.1224,
+    "petal_offset_y":0.0528,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":-1.885369086
+}
+            },
+        
+            
+            {   
+                "name":         "1",
+                "version":      76299,
+                "constants":    {
+    "petal_id":5,
+    "petal_offset_x":0.0105,
+    "petal_offset_y":0.0005,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":-1.256580211
+}
+            },
+        
+            
+            {   
+                "name":         "2",
+                "version":      76300,
+                "constants":    {
+    "petal_id":6,
+    "petal_offset_x":-0.0265,
+    "petal_offset_y":0.0415,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":-0.628353415
+}
+            },
+        
+            
+            {   
+                "name":         "3",
+                "version":      76301,
+                "constants":    {
+    "petal_id":3,
+    "petal_offset_x":-0.048,
+    "petal_offset_y":-0.0299,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":0.000150777
+}
+            },
+        
+            
+            {   
+                "name":         "4",
+                "version":      76302,
+                "constants":    {
+    "petal_id":8,
+    "petal_offset_x":-0.0196,
+    "petal_offset_y":0.0459,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":0.628496576
+}
+            },
+        
+            
+            {   
+                "name":         "5",
+                "version":      76303,
+                "constants":    {
+    "petal_id":10,
+    "petal_offset_x":-0.0794,
+    "petal_offset_y":-0.0113,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":1.256632524
+}
+            },
+        
+            
+            {   
+                "name":         "6",
+                "version":      76304,
+                "constants":    {
+    "petal_id":11,
+    "petal_offset_x":-0.0412,
+    "petal_offset_y":0.003,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":1.885139556
+}
+            },
+        
+            
+            {   
+                "name":         "7",
+                "version":      76305,
+                "constants":    {
+    "petal_id":2,
+    "petal_offset_x":0.0904,
+    "petal_offset_y":-0.102,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":2.51321797
+}
+            },
+        
+            
+            {   
+                "name":         "8",
+                "version":      76306,
+                "constants":    {
+    "petal_id":7,
+    "petal_offset_x":0.0056,
+    "petal_offset_y":-0.0267,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":3.14148172
+}
+            },
+        
+            
+            {   
+                "name":         "9",
+                "version":      76307,
+                "constants":    {
+    "petal_id":9,
+    "petal_offset_x":-0.014,
+    "petal_offset_y":0.0264,
+    "petal_offset_z":0.0,
+    "petal_rot_1":0.0,
+    "petal_rot_2":0.0,
+    "petal_rot_3":3.769961549
+}
+            }
+        
+    ]
+}
