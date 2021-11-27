@@ -79,7 +79,7 @@ def process_back_illuminated(D, nsig=4):
     return np.arcsinh(np.clip((D - mu) / (nsig * sig), 0, None))
 
 
-def plot_fvc(data, color='cividis', save=None):
+def plot_fvc(data, color='cividis', save=None, quality=95):
     """Plot an FVC image at full size (6000,6000) in the usual orientation.
     """
     dpi = 100
@@ -96,6 +96,6 @@ def plot_fvc(data, color='cividis', save=None):
     ax.imshow(data[:,::-1], origin='lower', interpolation='none', cmap=cmap)
     ax.axis('off')
     if save:
-        plt.savefig(save)
+        plt.savefig(save, quality=quality)
         plt.close(fig)
     return fig, ax
