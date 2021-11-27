@@ -96,6 +96,6 @@ def plot_fvc(data, color='cividis', save=None, quality=95):
     ax.imshow(data[:,::-1], origin='lower', interpolation='none', cmap=cmap)
     ax.axis('off')
     if save:
-        plt.savefig(save, quality=quality)
+        plt.savefig(save, pil_kwargs={'quality': quality})
         plt.close(fig)
     return fig, ax
