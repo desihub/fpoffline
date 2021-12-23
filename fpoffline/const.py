@@ -3,6 +3,12 @@
 import os
 import json
 import pathlib
+import collections
+import importlib.resources
+
+import numpy as np
+import pandas as pd
+
 
 # Array of petal_id values indexed by petal_loc=0-9.
 PETAL_ID_MAP = [4, 5, 6, 3, 8, 10, 11, 2, 7, 9]
@@ -38,3 +44,27 @@ def load_constants(version=None):
     with open(file) as f:
         data = json.load(f)
     return {elem['name']: elem['constants'] for elem in data['elements']}
+
+
+PETAL_DESIGN = None
+
+
+def get_petal_design():
+    global PETAL_DESIGN
+    if PETAL_DESIGN is None:
+        with importlib.resources.path('fpoffline.data', 'DESI-0530-v18-coords.csv') as path:
+            PETAL_DATA = pd.read_csv(path)
+        HOLES = PETAL_DATA[np.isin(PETAL_DATA.DEVICE_TYPE, ('POS','ETC','FIF','GIF'))]
+        X, Y = HOLES.X_PTL.to_numpy(), HOLES.Y_PTL.to_numpy()
+        LOCS = HOLES.DEVICE_LOC.to_numpy()
+        LOCMAP = np.full(LOCS.max() + 1, -1, int)
+        LOCMAP[LOCS] = np.arange(len(LOCS))
+        XFP, YFP = np.zeros((2, 10, len(LOCS)), np.float32)
+        for petal_loc in range(10):
+            alpha = (petal_loc - 3) * np.pi / 5
+            C, S = np.cos(alpha), np.sin(alpha)
+            XFP[petal_loc] = C * X - S * Y
+            YFP[petal_loc] = S * X + C * Y
+        PETAL_DESIGN = collections.namedtuple('PETAL_DESIGN',
+            ['holes','locmap','xfp','yfp'])(holes=HOLES, locmap=LOCMAP, xfp=XFP, yfp=YFP)
+    return PETAL_DESIGN
