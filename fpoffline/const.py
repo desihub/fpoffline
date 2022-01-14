@@ -14,6 +14,12 @@ import pandas as pd
 PETAL_ID_MAP = [4, 5, 6, 3, 8, 10, 11, 2, 7, 9]
 
 
+# List of the 18 devices removed during the summer 2021 shutdown
+REMOVED_2021 = ['M04182', 'M02725', 'M03709', 'M01722', 'M03996', 'M06848',
+                'M07550', 'M06931', 'M06891', 'M05743', 'M03567', 'M03918',
+                'M03824', 'M03236', 'M03912', 'M03556', 'M04024', 'M03648']
+
+
 def load_constants(version=None):
     """Load fiber positioner constants.
 
