@@ -1,5 +1,7 @@
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from . import const
 
 
@@ -21,12 +23,16 @@ class DeviceArray:
         self.all_locs = PTL.holes.DEVICE_LOC.to_numpy()
         self.ndata = np.count_nonzero(self.mask)
         self.locmap = PTL.locmap
+        self.xfp = PTL.xfp
+        self.yfp = PTL.yfp
 
     def _decode(self, locations):
         if isinstance(locations, slice) and (locations == slice(None)):
             locations = np.concatenate([petal_loc * 1000 + self.all_locs[self.mask] for petal_loc in range(10)])
         else:
             locations = np.asarray(locations)
+            if len(locations) == 0:
+                return [], []
         petal_locs = locations // 1000
         device_locs = locations % 1000
         invalid = ~np.isin(device_locs, self.all_locs[self.mask])
@@ -47,4 +53,37 @@ class DeviceArray:
         return locations
 
     def where(self, condition):
+        """Return locs for all devices that satisfy the specified condition on their data value.
+        """
         return self._encode(condition(self.data) & self.mask)
+    
+    def xy(self, locs=None):
+        """Return x,y arrays of FP coords for the specified locs.  Use locs=None for all positions.
+        """
+        if locs is None:
+            sel = slice(None)
+        else:
+            sel = self._decode(locs)
+        return self.xfp[sel], self.yfp[sel]
+
+
+def plotFP(*groups, POS=True, ETC=False, FIF=False, GIF=False, ax=None):
+    
+    FP = DeviceArray(POS=POS, ETC=ETC, FIF=FIF, GIF=GIF)
+
+    ax = ax or plt.gca()
+    ax.set_aspect(1)
+    ax.set_xlim(-420, 420)
+    ax.set_ylim(-420, 420)
+    ax.axis('off')
+    
+    needs_legend = False
+    for (locs, opts) in groups:
+        if 'label' in opts:
+            needs_legend = True
+        x, y = FP.xy(locs)
+        ax.scatter(x, y, **opts)
+    if needs_legend:
+        ax.legend()
+        
+    return ax
