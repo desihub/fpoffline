@@ -8,6 +8,8 @@ import datetime
 
 import astropy.time
 
+import fpoffline.io
+
 
 def run(args):
     # raise an exception here to flag any error
@@ -16,7 +18,7 @@ def run(args):
     if args.night is None:
         # Use yesterday's date by default.
         args.night = int((datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y%m%d'))
-        print(f'Using default night {args.night}')
+        logging.info(f'Using default night {args.night}')
 
     # Check we have a valid parent path.
     if not args.parent_dir.exists():
@@ -25,21 +27,8 @@ def run(args):
     # Create a night subdirectory if necessary.
     output = args.parent_dir / str(args.night)
     if not output.exists():
-        print(f'Creating {output}')
+        logging.info(f'Creating {output}')
         output.mkdir()
-
-    # Configure logging.
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
-    else:
-        level = logging.WARNING
-    if args.logpath is None:
-        args.logpath = output / f'endofnight-{args.night}.log'
-    print(f'Saving log to {args.logpath}')
-    logging.basicConfig(filename=args.logpath, level=level,
-        format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y%m%d %H:%M:%S')
 
     # Calculate local midnight for this observing midnight.
     N = str(args.night)
@@ -51,6 +40,15 @@ def run(args):
     twelve_hours = astropy.time.TimeDelta(12 * 3600, format='sec')
     noon_before = midnight - twelve_hours
     noon_after = midnight + twelve_hours
+
+    # Load the most recent database snapshot.
+    snapshot, snap_time = fpoffline.io.get_snapshot(astropy.time.Time(midnight, format='datetime'))
+    snapshot['LOCATION'] = snapshot['PETAL_LOC']*1000 + snapshot['DEVICE_LOC']
+    snapshot.sort('LOCATION')
+    logging.info(f'Loaded snapshot {snapshot.meta["name"]}')
+    snap_age = (midnight - snap_time).sec / 86400
+    if snap_age > 0.6:
+        logging.warning(f'Snapshot is {snap_age:.1f} days old.')
 
     return 0
 
@@ -77,11 +75,18 @@ def main():
         help='provide verbose output on progress')
     parser.add_argument('--debug', action='store_true',
         help='provide verbose and debugging output')
-    parser.add_argument('--logpath', type=pathlib.Path, metavar='PATH',
-        help='Path where logging output should be written')
     parser.add_argument('--traceback', action='store_true',
         help='print traceback and enter debugger after an exception')
     args = parser.parse_args()
+
+    # Configure logging.
+    if args.debug:
+        level = logging.DEBUG
+    elif args.verbose:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+    logging.basicConfig(level=level, format='%(levelname)s %(message)s')
 
     try:
         retval = run(args)
