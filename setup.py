@@ -14,6 +14,7 @@ setup(
     zip_safe=False,
     entry_points = {
         'console_scripts': [
+            'endofnight=fpoffline.scripts.endofnight:main',
         ],
     }
 )
