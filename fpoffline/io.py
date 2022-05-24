@@ -20,10 +20,15 @@ def get_snapshot(timestamp=None, maxage_days=5, path='/global/cfs/cdirs/desi/eng
             when = astropy.time.Time.strptime(snaps.name[:-15], '%Y%m%dT%H%M%S%z')
             if when >= timestamp:
                 continue
-            table = astropy.table.Table.read(snaps)
-            table.meta['name'] = snaps.name
-            return table, when
-
+            try:
+                table = astropy.table.Table.read(snaps)
+                table.meta['name'] = snaps.name
+                return table, when
+            except ValueError as e:
+                #import astropy
+                if astropy.__version__ == '5.0':
+                    print('You need astropy >= 5.0.4.  If you are getting 5.0 from the desiconda module "unset PYTHONPATH" may help.')
+                raise e
 
 def get_index(before=None, path='/global/cfs/cdirs/desi/engineering/focalplane/PositionerIndexTable/index_files'):
     """Locate and read the latest positioner index table.
