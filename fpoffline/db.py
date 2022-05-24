@@ -1,7 +1,9 @@
 """Tools to query the online positioner databases.
 """
-import numpy as np
+import pathlib
+import logging
 
+import numpy as np
 import pandas as pd
 
 import desimeter.transform.pos2ptl
@@ -9,13 +11,102 @@ import desimeter.transform.ptl2fp
 
 import fpoffline.const
 
+try:
+    import requests
+except ImportError:
+    # We will flag this later if it matters.
+    pass
+
+
+class DB(object):
+    """Initialize a connection to the database.
+
+    To force a direct connection using pyscopg2, set ``http_fallback``
+    to ``False``. To force an indirect http connection using requests,
+    set ``config_name`` to ``None``.  By default, will attempt a
+    direct connection then fall back to an indirect connection.
+
+    Direct connection parameters are stored in the SiteLite package.
+
+    An indirect connection reads authentication credentials from
+    your ~/.netrc file. Refer to this internal trac page for details:
+    https://desi.lbl.gov/trac/wiki/Computing/AccessNerscData#ProgrammaticAccess
+
+    Parameters
+    ----------
+    config_path : str
+        Path of yaml file containing direct connection parameters to use.
+    http_fallback : bool
+        Use an indirect http connection when a direct connection fails
+        if True.
+    """
+    def __init__(self, config_name='/global/cfs/cdirs/desi/engineering/focalplane/db.yaml', http_fallback=True):
+        self.method = 'indirect'
+        if pathlib.Path(config_name).exists():
+            # Try a direct connection.
+            try:
+                import yaml
+            except ImportError:
+                raise RuntimeError('The pyyaml package is not installed.')
+            with open(config_name, 'r') as f:
+                db_config = yaml.safe_load(f)
+            try:
+                import psycopg2
+                self.conn = psycopg2.connect(**db_config)
+                self.method = 'direct'
+            except ImportError:
+                if not http_fallback:
+                    raise RuntimeError('The psycopg2 package is not installed.')
+            except Exception as e:
+                if not http_fallback:
+                    raise RuntimeError(f'Unable to establish a database connection:\n{e}')
+        if self.method == 'indirect' and http_fallback:
+            try:
+                import requests
+            except ImportError:
+                raise RuntimeError('The requests package is not installed.')
+        logging.info(f'Established {self.method} database connection.')
+
+    def query(self, sql, maxrows=10, dates=None):
+        """Perform a query using arbitrary SQL. Returns a pandas dataframe.
+        Use maxrows=None to remove any limit on the number of returned rows.
+        """
+        logging.debug(f'SQL: {sql}')
+        if 'limit ' in sql.lower():
+            raise ValueError('Must specify SQL LIMIT using maxrows.')
+        if maxrows is None:
+            maxrows = 'NULL'
+        if self.method == 'direct':
+            return pd.read_sql(sql + f' LIMIT {maxrows}', self.conn, parse_dates=dates)
+        else:
+            return self.indirect(dict(sql_statement=sql, maxrows=maxrows), dates)
+
+    def indirect(self, params, dates=None):
+        """Perform an indirect query using an HTTP request. Returns a pandas dataframe."""
+        url = 'https://replicator.desi.lbl.gov/QE/DESI/app/query'
+        params['dbname'] = 'desi'
+        # Use tab-separated output since the web interface does not escape embedded
+        # special characters, and there are instances of commas in useful
+        # string columns like PROGRAM.
+        #params['output_type'] = 'text,' # comma separated
+        params['output_type'] = 'text' # tab separated
+        logging.debug(f'INDIRECT PARAMS: {params}')
+        req = requests.get(url, params=params)
+        if req.status_code != requests.codes.ok:
+            if req.status_code == 401:
+                raise RuntimeError('Authentication failed: have you setup your .netrc file?')
+            req.raise_for_status()
+        # The server response ends each line with "\t\r\n" so we replace that with "\n" here.
+        text = req.text.replace('\t\r\n', '\n')
+        return pd.read_csv(io.StringIO(text), sep='\t', parse_dates=dates)
+
 
 def get_calib(DB, at=None, verbose=True):
     """Get the most recent calibration data available, at the specified time or now, for each positioner on all petals.
 
     Parameters
     ----------
-    DB : desietc.db.DB
+    DB : fpoffline.db.DB
         Database connection to use.
     at : datetime-like
         A value that pd.Timestamp can interpet to specify when the calibration data should be valid.
@@ -57,7 +148,7 @@ def get_moves(DB, at=None, expid=None, maxrows=10000, verbose=True):
 
     Parameters
     ----------
-    DB : desietc.db.DB
+    DB : fpoffline.db.DB
         Database connection to use.
     at : datetime-like
         A value that pd.Timestamp can interpet to specify a time to fetch moves for.  Only the most recent

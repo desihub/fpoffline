@@ -19,12 +19,11 @@ import desimeter.transform.pos2ptl
 import desimeter.transform.xy2qs
 
 import fpoffline.io
+import fpoffline.db
 import fpoffline.const
 
 
 def run(args):
-
-    print(desimeter.__file__)
 
     # raise an exception here to flag any error
     # return value is propagated to the shell
@@ -89,6 +88,81 @@ def run(args):
     s0 = np.hypot(summary['OFFSET_X'], summary['OFFSET_Y'])
     r0 = desimeter.transform.xy2qs.s2r(s0)
     summary['R0_OVER_S0'] = r0 / s0
+
+    # Initialize online database access.
+    DB = fpoffline.db.DB()
+
+    # Look up the exposures taken on this night.
+    # Not all exposures have night set (e.g. the FP setup) so we
+    # search on a 24-hour window of update_time.
+    expvars = 'id,update_time,tileid,etcteff,etcreal,flavor,program'
+    cond = f"""
+    (update_time > timestamp '{noon_before.strftime("%Y-%m-%dT%H:%M:%S+0000")}') and
+    (update_time < timestamp '{noon_after.strftime("%Y-%m-%dT%H:%M:%S+0000")}')
+    """
+    sql = f'select {expvars} from exposure.exposure where {cond} order by update_time asc'
+    exps = DB.query(sql, maxrows=1000)
+
+    # Find the (first) FP_setup exposure.
+    setups = exps.query("program=='FP_setup'")
+    if len(setups) != 2:
+        print(f'Expected 2 setups but found {len(setups)}:')
+        if len(setups) > 0:
+            print(setups[['id','update_time']])
+    if len(setups) == 0:
+        print('Giving up with no setups.')
+        return
+    setup_id = setups.id.min()
+    summary.meta['setup_id'] = setup_id
+    summary.meta['setup_time'] = str(exps.query(f"id=={setup_id}").iloc[0].update_time)
+    if not setup_id:
+        print(f'Missing FP_setup exposure')
+    else:
+        print(f'FP_setup is expid {setup_id}')
+
+    # Find the (last) end park exposures.
+    fronts = exps[exps.program.str.endswith("(front illuminated image)").fillna(False)]
+    if len(fronts) != 1:
+        print(f'Expected 1 front-illuminated image but got {len(fronts)}')
+        if len(fronts) > 0:
+            print(fronts[['id','update_time']])
+    if args.front_id is None:
+        args.front_id = fronts.id.min()
+    if np.isfinite(args.front_id):
+        print(f'Front-illuminated image is expid {args.front_id}')
+        summary.meta['front_id'] = args.front_id
+        summary.meta['front_time'] = str(exps.query(f"id=={args.front_id}").iloc[0].update_time)
+    else:
+        print('Missing end-of-night front-illuminated exposure')
+        summary.meta['front_id'] = None
+        args.front_id = None
+
+    backs = exps[exps.program.str.endswith("(back illuminated image)").fillna(False)]
+    if len(backs) != 1:
+        print(f'Expected 1 back-illuminated image but got {len(backs)}')
+        if len(backs) > 0:
+            print(backs[['id','update_time']])
+    if args.back_id is None:
+        args.back_id = backs.id.min()
+    if np.isfinite(args.back_id):
+        print(f'Back-illuminated image is expid {args.back_id}')
+        summary.meta['back_id'] = args.back_id
+        summary.meta['back_time'] = str(exps.query(f"id=={args.back_id}").iloc[0].update_time)
+    else:
+        print('Missing end-of-night back-illuminated exposure')
+        summary.meta['back_id'] = None
+        args.back_id = None
+
+    if args.park_id is None:
+        args.park_id = exps.query("program=='FP_setup'").id.max()
+    if np.isfinite(args.park_id) and args.park_id > setup_id:
+        print(f'End-night park image is expid {args.park_id}')
+        summary.meta['park_id'] = args.park_id
+        summary.meta['park_time'] = str(exps.query(f"id=={args.park_id}").iloc[0].update_time)
+    else:
+        print('Missing end-of-night park exposure')
+        summary.meta['park_id'] = None
+        args.park_id = None
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
