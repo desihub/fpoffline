@@ -14,8 +14,9 @@ import fitsio
 
 import astropy.time
 
-import desimeter
+#import desimeter
 import desimeter.io
+import desimeter.processfvc
 import desimeter.transform.ptl2fp
 import desimeter.transform.pos2ptl
 import desimeter.transform.xy2qs
@@ -231,6 +232,37 @@ def run(args):
                     summary.meta['back_id'] = None
                     back_fits = None
 
+        if back_fits:
+            try:
+                # Use desimeter to find the back-illuminated spots.
+                spots = desimeter.processfvc.process_fvc(str(back_fits), use_subprocess=False)
+                logging.info(f'Fit {len(spots)} spots')
+                # Fit the FVC <-> FP transforms to the spots.
+                tx = desimeter.transform.fvc2fp.FVC2FP.read_jsonfile(desimeter.io.fvc2fp_filename())
+                tx.fit(spots, metrology, update_spots=False, zbfit=True)
+                # Record per-location info of all fidicials and positioners.
+                fp = np.stack((summary['X_FP'], summary['Y_FP']))
+                fvc = np.stack(tx.fp2fvc(fp[0], fp[1]))
+                # Save X_FVC,Y_FVC measured from top-left corner.
+                fvc_img_size = 6000
+                summary['X_FVC'], summary['Y_FVC'] = fvc_img_size - fvc
+                # Calculate a local linear transformation from FP coords to FVC pixels.
+                dfvc_dx = np.stack(tx.fp2fvc(fp[0] + 0.5, fp[1])) - np.stack(tx.fp2fvc(fp[0] - 0.5, fp[1]))
+                dfvc_dy = np.stack(tx.fp2fvc(fp[0], fp[1] + 0.5)) - np.stack(tx.fp2fvc(fp[0], fp[1] - 0.5))
+                summary['DXFVC_DXFP'], summary['DYFVC_DXFP'] = -dfvc_dx
+                summary['DXFVC_DYFP'], summary['DYFVC_DYFP'] = -dfvc_dy
+                # Transform GFA, PTL keepouts from FP to FVC.
+                for petal_loc in range(10):
+                    xfp, yfp = summary.meta['keepout']['gfa'][petal_loc]
+                    xfvc, yfvc = tx.fp2fvc(np.array(xfp), np.array(yfp))
+                    summary.meta['keepout']['gfa'][petal_loc] = [(6000-xfvc).tolist(), (6000-yfvc).tolist()]
+                    xfp, yfp = summary.meta['keepout']['ptl'][petal_loc]
+                    xfvc, yfvc = tx.fp2fvc(np.array(xfp), np.array(yfp))
+                    summary.meta['keepout']['ptl'][petal_loc] = [(6000-xfvc).tolist(), (6000-yfvc).tolist()]
+            except Exception as e:
+                logging.warning(f'Failed to fit spots in expid {args.back_id}:\n{e}')
+                if args.traceback:
+                    raise e
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
