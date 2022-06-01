@@ -196,6 +196,41 @@ def run(args):
                 data = fpoffline.fvc.process_front_illuminated(data)
                 fpoffline.fvc.plot_fvc(data, color='cividis', save=front_img, quality=75)
 
+    if args.back_id or args.park_id:
+        # There are normally two final back-illuminated images.  Use the first in this case.
+        if args.park_id and args.back_id and args.front_id and (args.park_id == args.front_id - 2):
+            logging.info(f'Using the park back-illuminated expid {args.park_id} instead of {args.back_id}')
+            args.back_id = args.park_id
+        if args.park_id and not args.back_id:
+            logging.info(f'Using the park expid {args.park_id} since no final back-illuminated image available.')
+            args.back_id = args.park_id
+        back_img =  output / f'fvc-back-{args.night}.jpg'
+        btag = str(args.back_id).zfill(8)
+        back_fits = DATA / str(args.night) / btag / f'fvc-{btag}.fits.fz'
+        if not back_fits.exists():
+            logging.warning(f'Missing back-illuminated FVC image {back_fits}')
+            summary.meta['back_id'] = None
+            back_fits = None
+        else:
+            bhdr = fitsio.read_header(str(back_fits), ext=0)
+            if end_time is None and 'DATE-OBS' in bhdr and bhdr['DATE-OBS']:
+                end_time = bhdr['DATE-OBS'] + '+0000'
+            if end_time is None and 'MJD-OBS' in bhdr and bhdr['MJD-OBS']:
+                # Park FVC image is missing DATE-OBS but has MJD-OBS.
+                end_time = astropy.time.Time(bhdr['MJD-OBS'], format='mjd').iso + '+0000'
+                logging.warning('Back image missing DATE-OBS so using MJD-OBS instead.')
+            if args.overwrite or not back_img.exists():
+                logging.info(f'Generating {back_img} from expid {args.back_id}...')
+                try:
+                    data = fitsio.read(str(back_fits), ext='F0000')
+                    data = fpoffline.fvc.process_back_illuminated(data)
+                    fpoffline.fvc.plot_fvc(data, color=(0,1,1), save=back_img, quality=85)
+                except Exception as e:
+                    logging.warning(f'Error reading back-illuminated FVC image {back_fits}')
+                    logging.warning(e)
+                    summary.meta['back_id'] = None
+                    back_fits = None
+
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
