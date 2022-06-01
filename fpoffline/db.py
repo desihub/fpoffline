@@ -21,7 +21,7 @@ except ImportError:
 class DB(object):
     """Initialize a connection to the database.
 
-    To force a direct connection using pyscopg2, set ``http_fallback``
+    To force a direct connection using sqlalchemy and pyscopg2, set ``http_fallback``
     to ``False``. To force an indirect http connection using requests,
     set ``config_name`` to ``None``.  By default, will attempt a
     direct connection then fall back to an indirect connection.
@@ -51,12 +51,13 @@ class DB(object):
             with open(config_name, 'r') as f:
                 db_config = yaml.safe_load(f)
             try:
-                import psycopg2
-                self.conn = psycopg2.connect(**db_config)
+                import sqlalchemy
+                self.engine = sqlalchemy.create_engine(
+                    'postgresql://{user}:{password}@{host}:{port}/{dbname}'.format(**db_config))
                 self.method = 'direct'
             except ImportError:
                 if not http_fallback:
-                    raise RuntimeError('The psycopg2 package is not installed.')
+                    raise RuntimeError('The sqlalchemy package is not installed.')
             except Exception as e:
                 if not http_fallback:
                     raise RuntimeError(f'Unable to establish a database connection:\n{e}')
@@ -77,7 +78,7 @@ class DB(object):
         if maxrows is None:
             maxrows = 'NULL'
         if self.method == 'direct':
-            return pd.read_sql(sql + f' LIMIT {maxrows}', self.conn, parse_dates=dates)
+            return pd.read_sql(sql + f' LIMIT {maxrows}', self.engine, parse_dates=dates)
         else:
             return self.indirect(dict(sql_statement=sql, maxrows=maxrows), dates)
 
