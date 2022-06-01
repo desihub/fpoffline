@@ -10,6 +10,8 @@ from ast import literal_eval as safe_eval
 
 import numpy as np
 
+import fitsio
+
 import astropy.time
 
 import desimeter
@@ -20,6 +22,7 @@ import desimeter.transform.xy2qs
 
 import fpoffline.io
 import fpoffline.db
+import fpoffline.fvc
 import fpoffline.const
 
 
@@ -42,6 +45,7 @@ def run(args):
     if not output.exists():
         logging.info(f'Creating {output}')
         output.mkdir()
+    logging.info(f'Output for {args.night} will be stored in {output}')
 
     # Calculate local midnight for this observing midnight.
     N = str(args.night)
@@ -167,6 +171,32 @@ def run(args):
         summary.meta['park_id'] = None
         args.park_id = None
 
+    # Locate raw data products.
+    DATA = args.data_dir
+    logging.info(f'Reading FVC images from {args.data_dir}')
+
+    end_time = None
+    if args.front_id:
+        if args.back_id and (args.back_id - args.front_id != 2):
+            logging.warning(f'Unexpected back_id - front_id = {args.back_id - args.front_id}')
+        # Generate processed images.
+        front_img =  output / f'fvc-front-{args.night}.jpg'
+        ftag = str(args.front_id).zfill(8)
+        front_fits = DATA / str(args.night) / ftag / f'fvc-{ftag}.fits.fz'
+        if not front_fits.exists():
+            logging.warning(f'Missing front-illuminated FVC image {front_fits}')
+            summary.meta['front_id'] = None
+        else:
+            fhdr = fitsio.read_header(str(front_fits), ext=0)
+            if end_time is None and 'DATE-OBS' in fhdr and fhdr['DATE-OBS']:
+                end_time = fhdr['DATE-OBS'] + '+0000'
+            if args.overwrite or not front_img.exists():
+                logging.info(f'Generating {front_img} from expid {args.front_id}...')
+                data = fitsio.read(str(front_fits), ext='F0000')
+                data = fpoffline.fvc.process_front_illuminated(data)
+                fpoffline.fvc.plot_fvc(data, color='cividis', save=front_img, quality=75)
+
+
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
     summary.meta = dict(summary.meta) # Don't use an OrderedDict
@@ -279,6 +309,9 @@ def main():
     parser.add_argument('--parent-dir', type=pathlib.Path, metavar='PATH',
         default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/endofnight'),
         help='parent directory for per-night output directories')
+    parser.add_argument('--data-dir', type=pathlib.Path, metavar='PATH',
+        default=pathlib.Path('/global/cfs/cdirs/desi/spectro/data'),
+        help='directory containing raw data products under NIGHT/EXPID/')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='provide verbose output on progress')
     parser.add_argument('--debug', action='store_true',
