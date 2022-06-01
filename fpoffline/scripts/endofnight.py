@@ -76,7 +76,7 @@ def run(args):
     # Add indexing info. The left join will drop 5 fidicuals that are missing metrology:
     # P074, P030, P029, P123, P058.
     I = fpoffline.io.get_index(args.night)
-    print(f'Using index {I.meta["index_name"]}')
+    logging.info(f'Using index {I.meta["index_name"]}')
     I['LOCATION'] = 1000 * I['PETAL_LOC'] + I['DEVICE_LOC']
     summary = astropy.table.join(summary, I, keys='LOCATION', join_type='left')
     summary.sort('LOCATION')
@@ -106,61 +106,64 @@ def run(args):
     # Find the (first) FP_setup exposure.
     setups = exps.query("program=='FP_setup'")
     if len(setups) != 2:
-        print(f'Expected 2 setups but found {len(setups)}:')
+        logging.warning(f'Expected 2 setups but found {len(setups)}:')
         if len(setups) > 0:
-            print(setups[['id','update_time']])
-    if len(setups) == 0:
-        print('Giving up with no setups.')
-        return
-    setup_id = setups.id.min()
-    summary.meta['setup_id'] = setup_id
-    summary.meta['setup_time'] = str(exps.query(f"id=={setup_id}").iloc[0].update_time)
-    if not setup_id:
-        print(f'Missing FP_setup exposure')
-    else:
-        print(f'FP_setup is expid {setup_id}')
+            logging.warning(setups[['id','update_time']])
+    if args.setup_id is None:
+        if len(setups) == 0:
+            logging.error('Giving up with no setups.')
+            return -1
+        args.setup_id = setups.id.min()
+    summary.meta['setup_id'] = args.setup_id
+    setup_exp = exps.query(f"id=={args.setup_id}")
+    summary.meta['setup_time'] = str(exps.query(f"id=={args.setup_id}").iloc[0].update_time)
+    if not args.setup_id or len(setup_exp) != 1:
+        logging.error('Missing FP_setup exposure')
+        return -1
+    summary.meta['setup_time'] = str(setup_exp.iloc[0].update_time)
+    logging.info(f'FP_setup is expid {args.setup_id}')
 
     # Find the (last) end park exposures.
     fronts = exps[exps.program.str.endswith("(front illuminated image)").fillna(False)]
     if len(fronts) != 1:
-        print(f'Expected 1 front-illuminated image but got {len(fronts)}')
+        logging.warning(f'Expected 1 front-illuminated image but got {len(fronts)}')
         if len(fronts) > 0:
-            print(fronts[['id','update_time']])
+            logging.warning(fronts[['id','update_time']])
     if args.front_id is None:
         args.front_id = fronts.id.min()
     if np.isfinite(args.front_id):
-        print(f'Front-illuminated image is expid {args.front_id}')
+        logging.info(f'Front-illuminated image is expid {args.front_id}')
         summary.meta['front_id'] = args.front_id
         summary.meta['front_time'] = str(exps.query(f"id=={args.front_id}").iloc[0].update_time)
     else:
-        print('Missing end-of-night front-illuminated exposure')
+        logging.warning('Missing end-of-night front-illuminated exposure')
         summary.meta['front_id'] = None
         args.front_id = None
 
     backs = exps[exps.program.str.endswith("(back illuminated image)").fillna(False)]
     if len(backs) != 1:
-        print(f'Expected 1 back-illuminated image but got {len(backs)}')
+        logging.warning(f'Expected 1 back-illuminated image but got {len(backs)}')
         if len(backs) > 0:
-            print(backs[['id','update_time']])
+            logging.warning(backs[['id','update_time']])
     if args.back_id is None:
         args.back_id = backs.id.min()
     if np.isfinite(args.back_id):
-        print(f'Back-illuminated image is expid {args.back_id}')
+        logging.info(f'Back-illuminated image is expid {args.back_id}')
         summary.meta['back_id'] = args.back_id
         summary.meta['back_time'] = str(exps.query(f"id=={args.back_id}").iloc[0].update_time)
     else:
-        print('Missing end-of-night back-illuminated exposure')
+        logging.warning('Missing end-of-night back-illuminated exposure')
         summary.meta['back_id'] = None
         args.back_id = None
 
     if args.park_id is None:
         args.park_id = exps.query("program=='FP_setup'").id.max()
-    if np.isfinite(args.park_id) and args.park_id > setup_id:
-        print(f'End-night park image is expid {args.park_id}')
+    if np.isfinite(args.park_id) and args.park_id > args.setup_id:
+        logging.info(f'End-night park image is expid {args.park_id}')
         summary.meta['park_id'] = args.park_id
         summary.meta['park_time'] = str(exps.query(f"id=={args.park_id}").iloc[0].update_time)
     else:
-        print('Missing end-of-night park exposure')
+        logging.warning('Missing end-of-night park exposure')
         summary.meta['park_id'] = None
         args.park_id = None
 
@@ -265,6 +268,8 @@ def main():
         help='night to process or use the most recent night if not specified')
     parser.add_argument('--overwrite', action='store_true',
         help='overwrite any existing output files')
+    parser.add_argument('--setup-id', type=int, metavar='NNNNNNNN',
+        help='exposure ID that starts the observing night')
     parser.add_argument('--front-id', type=int, metavar='NNNNNNNN',
         help='exposure ID to use for the front-illuminated image')
     parser.add_argument('--back-id', type=int, metavar='NNNNNNNN',
