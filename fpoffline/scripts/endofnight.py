@@ -10,6 +10,8 @@ from ast import literal_eval as safe_eval
 
 import numpy as np
 
+import pandas as pd
+
 import fitsio
 
 import astropy.time
@@ -263,6 +265,41 @@ def run(args):
                 logging.warning(f'Failed to fit spots in expid {args.back_id}:\n{e}')
                 if args.traceback:
                     raise e
+
+    # Determine the end time to use for DB queries if not already set.
+    snap_time = snap_time.strftime("%Y-%m-%dT%H:%M:%S+0000")
+    if end_time is None:
+        end_time = noon_after.strftime("%Y-%m-%dT%H:%M:%S+0000")
+        logging.warning(f'using default end_time {end_time} in absence of any park FVC images')
+    # Save the end time to use for DB queries.
+    summary.meta['end_time'] = str(end_time)
+
+    # Look for any calib updates since the snapshot.
+    calib_csv = output / f'calib-{args.night}.csv'
+    if args.overwrite or not calib_csv.exists():
+        logging.info(f'Fetching calib DB updates during {snap_time} - {end_time}...')
+        tables = []
+        for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
+            table_name = f'posmovedb.positioner_calibration_p{petal_id}'
+            sql = f'''
+                select * from {table_name} where
+                    (time_recorded > timestamp '{snap_time}') and
+                    (time_recorded < timestamp '{end_time}')
+                order by time_recorded asc
+            '''
+            table = DB.query(sql, maxrows=1000)
+            if len(table) > 0:
+                logging.info(f'Read {len(table)} rows for PETAL_LOC {petal_loc}')
+            table['petal_loc'] = petal_loc
+            table['location'] = 1000*petal_loc + table['device_loc']
+            tables.append(table)
+        calib = pd.concat(tables, axis='index', ignore_index=True)
+        calib.to_csv(calib_csv, index=False)
+        logging.info(f'Wrote {calib_csv.name} with {len(calib)} rows.')
+    else:
+        calib = pd.read_csv(calib_csv, parse_dates=['time_recorded'])
+        logging.info(f'Read {calib_csv.name} with {len(calib)} rows.')
+
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
