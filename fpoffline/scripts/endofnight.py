@@ -305,6 +305,82 @@ def run(args):
         calib = pd.read_csv(calib_csv, parse_dates=['time_recorded'])
         logging.info(f'Read {calib_csv.name} with {len(calib)} rows.')
 
+    # Look for move updates since the snapshot.
+    moves_csv = output / f'moves-{args.night}.csv.gz'
+    if args.overwrite or not moves_csv.exists():
+        print(f'Fetching moves DB updates during {snap_time} - {end_time}...')
+        tables = []
+        for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
+            table_name = f'posmovedb.positioner_moves_p{petal_id}'
+            move_cols = '''
+                time_recorded,device_loc,pos_id,pos_t,pos_p,ctrl_enabled,move_cmd,move_val1,move_val2,log_note,
+                exposure_id,exposure_iter,flags,ptl_x,ptl_y,obs_x,obs_y
+                '''
+            # We don't bother sorting by time_recorded in the query since we do it globally after concatenating all petals.
+            sql = f'''
+                select {move_cols} from {table_name} where
+                    (time_recorded > timestamp '{snap_time}') and
+                    (time_recorded < timestamp '{end_time}')
+            '''
+            table = DB.query(sql, maxrows=200000)
+            if len(table) > 0:
+                logging.info(f'Read {len(table)} rows for PETAL_LOC {petal_loc}')
+            table['location'] = 1000*petal_loc + table['device_loc']
+            table.drop(columns='device_loc', inplace=True)
+            tables.append(table)
+        moves = pd.concat(tables, axis='index', ignore_index=True)
+        # Sort by increasing time.
+        moves.sort_values('time_recorded', inplace=True, ignore_index=True)
+        # Calculate and save the sum of commanded T,P moves.
+        def sum_move(col_in, col_out):
+            moves[col_out] = 0.
+            valid = moves[col_in].notna()
+            angle = moves[col_in].dropna().str.split('; | ').apply(lambda d: np.sum(np.array(list(map(float, d[1::2])))))
+            moves.loc[valid, col_out] = angle
+            moves.drop(columns=col_in, inplace=True) # Drop the original string column
+        sum_move('move_val1', 'move_t')
+        sum_move('move_val2', 'move_p')
+        # Compress the log notes
+        moves.log_note = (
+            moves.log_note
+            .str.replace("Positioner is disabled", "$D", regex=False)
+            .str.replace("Target request denied", "$R", regex=False)
+            .str.replace("handle_fvc_feedback", "$F", regex=False)
+            .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "$S", regex=False)
+            .str.replace("tp_update_posTP", "$U", regex=False)
+            .str.replace("end of night park_positioners observer script", "$E", regex=False)
+            .str.replace("req_posintTP=", "TP=", regex=False)
+            .str.replace("req_ptlXYZ=", "XYZ=", regex=False)
+        )
+        # Compress the move_cmd
+        moves.move_cmd = (
+            moves.move_cmd
+            .str.replace("; (auto backlash backup); (auto final creep)", "$A", regex=False)
+            .str.replace("obsdXdY=", "dXY=", regex=False)
+        )
+        # Transform PTL_X,Y corresponding to OBS_X,Y into nominal FP coords
+        # for a direct probe of the petal alignments.
+        valid = ~(moves.ptl_x.isna() | moves.ptl_y.isna() | moves.location.isna())
+        moves.loc[valid, 'ptl_x'], moves.loc[valid, 'ptl_y'] = ptl2fp_nominal(
+            moves.ptl_x[valid], moves.ptl_y[valid], moves.location[valid] // 1000)
+        # Extract and save ptlXYZ from the log_note.
+        sel = moves.log_note.str.contains('XYZ=') & ~moves.location.isna()
+        msel = moves[sel]
+        petal_locs = np.array(msel.location // 1000)
+        def splitXYZ(note):
+            i1 = note.index('XYZ=(')
+            i2 = note.index(')', i1)
+            return [float(val) for val in note[i1+5:i2].split(', ')]
+        ptlXYZ = msel.log_note.apply(splitXYZ)
+        x_ptl = ptlXYZ.apply(lambda d: d[0])
+        y_ptl = ptlXYZ.apply(lambda d: d[1])
+        # Transform the requested PTL coords into nominal FP coords.
+        x_req, y_req = ptl2fp_nominal(x_ptl, y_ptl, petal_locs)
+        moves['req_x'] = np.nan
+        moves['req_y'] = np.nan
+        moves.loc[sel, 'req_x'] = x_req
+        moves.loc[sel, 'req_y'] = y_req
+
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
@@ -396,6 +472,19 @@ def get_keepouts(snap, arm, canonical):
 #        x_fp[sel], y_fp[sel], _ = desimeter.transform.ptl2fp.ptl2fp(
 #            petal_loc, x_ptl[sel], y_ptl[sel])
 #    return x_fp, y_fp
+
+
+def ptl2fp_nominal(x_ptl, y_ptl, petal_locs):
+    """Transform from petal flat (x,y) to focal-plane (x,y) with nominal rotation.
+    """
+    phi = (np.arange(10) - 3) * np.pi / 5
+    x_fp, y_fp = np.zeros(shape=(2,)+x_ptl.shape)
+    for petal_loc in np.unique(petal_locs):
+        sel = (petal_locs == petal_loc)
+        C, S = np.cos(phi[petal_loc]), np.sin(phi[petal_loc])
+        x_fp[sel] = x_ptl[sel] * C - y_ptl[sel] * S
+        y_fp[sel] = x_ptl[sel] * S + y_ptl[sel] * C
+    return x_fp, y_fp
 
 
 def main():
