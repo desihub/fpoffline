@@ -3,6 +3,7 @@ import logging
 import pdb
 import traceback
 import sys
+import os
 import pathlib
 import datetime
 import math
@@ -235,6 +236,9 @@ def run(args):
                     back_fits = None
 
         if back_fits:
+            # Less verbose desimeter logging.
+            desi_loglevel = os.getenv('DESI_LOGLEVEL', 'INFO')
+            os.putenv('DESI_LOGLEVEL', 'ERROR')
             try:
                 # Use desimeter to find the back-illuminated spots.
                 spots = desimeter.processfvc.process_fvc(str(back_fits), use_subprocess=False)
@@ -265,6 +269,7 @@ def run(args):
                 logging.warning(f'Failed to fit spots in expid {args.back_id}:\n{e}')
                 if args.traceback:
                     raise e
+            os.putenv('DESI_LOGLEVEL', desi_loglevel)
 
     # Determine the end time to use for DB queries if not already set.
     snap_time = snap_time.strftime("%Y-%m-%dT%H:%M:%S+0000")
