@@ -338,8 +338,8 @@ def run(args):
             angle = moves[col_in].dropna().str.split('; | ').apply(lambda d: np.sum(np.array(list(map(float, d[1::2])))))
             moves.loc[valid, col_out] = angle
             moves.drop(columns=col_in, inplace=True) # Drop the original string column
-        sum_move('move_val1', 'move_t')
-        sum_move('move_val2', 'move_p')
+        sum_move('move_val1', 'req_dt')
+        sum_move('move_val2', 'req_dp')
         # Compress the log notes
         moves.log_note = (
             moves.log_note
@@ -396,6 +396,24 @@ def run(args):
         x_pred, y_pred = ptl2fp_nominal(x_ptl_from_angles, y_ptl_from_angles, petal_locs)
         moves.loc[valid, 'pred_x'] = x_pred
         moves.loc[valid, 'pred_y'] = y_pred
+        # Identify rows with FVC feedback.
+        moves['fvc_feedback'] = moves.log_note.str.contains("\$F")
+        # Flag rows that are followed immediately by an FVC feedback row.
+        byloc = moves.groupby('location')
+        moves['has_fvc_feedback'] = byloc.fvc_feedback.shift(-1, fill_value=False)
+        # Store the feedback POS_T,P as FVC_T,P or NaN if there is no FVC feedback.
+        moves['fvc_t'] = np.nan
+        moves['fvc_p'] = np.nan
+        moves.loc[moves['has_fvc_feedback'], 'fvc_t'] = byloc.pos_t.shift(-1, fill_value=np.nan)
+        moves.loc[moves['has_fvc_feedback'], 'fvc_p'] = byloc.pos_p.shift(-1, fill_value=np.nan)
+        # Calculate the actual change in angles using fvc_t,p
+        byloc = moves.groupby('location')
+        moves['last_fvc_t'] = byloc.fvc_t.shift(+1, fill_value=np.nan)
+        moves['last_fvc_p'] = byloc.fvc_p.shift(+1, fill_value=np.nan)
+        moves['act_dt'] = moves.fvc_t - moves.last_fvc_t
+        moves['act_dp'] = moves.fvc_p - moves.last_fvc_p
+        # Remove temporary columns and only keep fvc_t,p and act_dt,dp
+        moves.drop(columns=['fvc_feedback', 'has_fvc_feedback', 'last_fvc_t', 'last_fvc_p'], inplace=True)
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values

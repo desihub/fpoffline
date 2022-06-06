@@ -24,6 +24,7 @@ Stored as `moves-YYYYMMDD.csv.gz` and derived from the rows added to the move ta
 | ------ | ---- | ------------|
 | time_recorded | hr | Hours relative to local noon before this observing night |
 | pos_id | - | Positioner ID string, e.g. M01234 |
+| location | - | 1000 * PETAL_LOC + DEVICE_LOC |
 | ctrl_enabled | - | 0 = disabled, 1 = enabled |
 | move_cmd | - | string describing the move performed |
 | log_note | - | log note attached to this move |
@@ -31,6 +32,9 @@ Stored as `moves-YYYYMMDD.csv.gz` and derived from the rows added to the move ta
 | exposure_iter | - | iteration within this exposure (0=blind, 1=correction) |
 | flags | - | bitmask of status flags documented [here](https://desi.lbl.gov/trac/wiki/FPS/PositionerFlags) |
 | pos_t,p | deg | Internal theta and phi angles |
+| fvc_t,p | deg | Angles from an immediately following FVC feedback correction, when present, or a copy of pos_t,p |
+| req_dt,dp | deg | Requested change of angles obtained as the sum of the angles appearing in the move_val1,2 text columns |
+| act_dt,dp | deg | Actual change of angles obtained as the change in fvc_t,p from the previous to current row |
 | ptl_x,y | mm | PTL coords from the moves DB converted to FP coords with nominal petal alignments |
 | obs_x,y | mm | FP coords from the moves DB, derived from FVC spots |
 | req_x,y | mm | requested petal coords from log note converted to FP coords with nominal petal alignments |
