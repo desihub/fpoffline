@@ -380,7 +380,22 @@ def run(args):
         moves['req_y'] = np.nan
         moves.loc[sel, 'req_x'] = x_req
         moves.loc[sel, 'req_y'] = y_req
-
+        # Calculate predicted petal and focal-plane (x,y) for each valid internal (t,p).
+        valid = ~(moves.pos_t.isna() | moves.pos_p.isna() | moves.location.isna())
+        locs = moves[valid].location
+        idx = np.searchsorted(summary['LOCATION'], locs)
+        assert np.all(summary['LOCATION'][idx] == locs)
+        petal_locs = summary['PETAL_LOC'][idx]
+        moves['pred_x'] = np.nan
+        moves['pred_y'] = np.nan
+        x_ptl_from_angles, y_ptl_from_angles = int2ptl(
+            moves.pos_t[valid], moves.pos_p[valid],
+            summary['OFFSET_T'][idx], summary['OFFSET_P'][idx],
+            summary['LENGTH_R1'][idx], summary['LENGTH_R2'][idx],
+            summary['OFFSET_X'][idx], summary['OFFSET_Y'][idx])
+        x_pred, y_pred = ptl2fp_nominal(x_ptl_from_angles, y_ptl_from_angles, petal_locs)
+        moves.loc[valid, 'pred_x'] = x_pred
+        moves.loc[valid, 'pred_y'] = y_pred
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
@@ -472,6 +487,17 @@ def get_keepouts(snap, arm, canonical):
 #        x_fp[sel], y_fp[sel], _ = desimeter.transform.ptl2fp.ptl2fp(
 #            petal_loc, x_ptl[sel], y_ptl[sel])
 #    return x_fp, y_fp
+
+
+def int2ptl(t_int, p_int, offset_t, offset_p, length_r1, length_r2, offset_x, offset_y):
+    """Transform from internal angles (t,p) to ptl (x,y).
+    """
+    t_ext = desimeter.transform.pos2ptl.int2ext(t_int, offset_t)
+    p_ext = desimeter.transform.pos2ptl.int2ext(p_int, offset_p)
+    x_loc, y_loc = desimeter.transform.pos2ptl.ext2loc(t_ext, p_ext, length_r1, length_r2)
+    x_flat = desimeter.transform.pos2ptl.loc2flat(x_loc, offset_x)
+    y_flat = desimeter.transform.pos2ptl.loc2flat(y_loc, offset_y)
+    return desimeter.transform.pos2ptl.flat2ptl(x_flat, y_flat)
 
 
 def ptl2fp_nominal(x_ptl, y_ptl, petal_locs):
