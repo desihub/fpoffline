@@ -340,24 +340,6 @@ def run(args):
             moves.drop(columns=col_in, inplace=True) # Drop the original string column
         sum_move('move_val1', 'req_dt')
         sum_move('move_val2', 'req_dp')
-        # Compress the log notes
-        moves.log_note = (
-            moves.log_note
-            .str.replace("Positioner is disabled", "$D", regex=False)
-            .str.replace("Target request denied", "$R", regex=False)
-            .str.replace("handle_fvc_feedback", "$F", regex=False)
-            .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "$S", regex=False)
-            .str.replace("tp_update_posTP", "$U", regex=False)
-            .str.replace("end of night park_positioners observer script", "$E", regex=False)
-            .str.replace("req_posintTP=", "TP=", regex=False)
-            .str.replace("req_ptlXYZ=", "XYZ=", regex=False)
-        )
-        # Compress the move_cmd
-        moves.move_cmd = (
-            moves.move_cmd
-            .str.replace("; (auto backlash backup); (auto final creep)", "$A", regex=False)
-            .str.replace("obsdXdY=", "dXY=", regex=False)
-        )
         # Transform PTL_X,Y corresponding to OBS_X,Y into nominal FP coords
         # for a direct probe of the petal alignments.
         valid = ~(moves.ptl_x.isna() | moves.ptl_y.isna() | moves.location.isna())
@@ -397,7 +379,7 @@ def run(args):
         moves.loc[valid, 'pred_x'] = x_pred
         moves.loc[valid, 'pred_y'] = y_pred
         # Identify rows with FVC feedback.
-        moves['fvc_feedback'] = moves.log_note.str.contains("\$F")
+        moves['fvc_feedback'] = moves.log_note.str.contains('handle_fvc_feedback')
         # Flag rows that are followed immediately by an FVC feedback row.
         byloc = moves.groupby('location')
         moves['has_fvc_feedback'] = byloc.fvc_feedback.shift(-1, fill_value=False)
@@ -424,6 +406,9 @@ def run(args):
             for name in 'ptl,obs,req,pred'.split(','):
                 moves[name + '_x'] = np.round(moves[name + '_x'], 5)
                 moves[name + '_y'] = np.round(moves[name + '_y'], 5)
+        # Compress non floating-point columns for smaller moves CSV output if requested.
+        if not args.no_compress:
+            compress_moves(moves, noon_before)
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
@@ -431,6 +416,44 @@ def run(args):
     summary.write(output / f'fp-{args.night}.ecsv', overwrite=True)
 
     return 0
+
+
+def compress_moves(moves, noon_before):
+    """Compress non floating-point columns in the moves table for smaller CSV output.
+    Operations are performed in place on the dataframe passed to this function.
+    """
+    # Compress the log notes
+    moves.log_note = (
+        moves.log_note
+        .str.replace("Positioner is disabled", "$D", regex=False)
+        .str.replace("Target request denied", "$R", regex=False)
+        .str.replace("handle_fvc_feedback", "$F", regex=False)
+        .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "$S", regex=False)
+        .str.replace("tp_update_posTP", "$U", regex=False)
+        .str.replace("end of night park_positioners observer script", "$E", regex=False)
+        .str.replace("req_posintTP=", "TP=", regex=False)
+        .str.replace("req_ptlXYZ=", "XYZ=", regex=False)
+    )
+    # Compress the move_cmd
+    moves.move_cmd = (
+        moves.move_cmd
+        .str.replace("; (auto backlash backup); (auto final creep)", "$A", regex=False)
+        .str.replace("obsdXdY=", "dXY=", regex=False)
+    )
+    # Change int columns with NAs that are represented as floats back to ints
+    # by replacing NA=nan with -1 or 0.
+    moves['exposure_id'] = moves['exposure_id'].fillna(-1).astype(int)
+    moves['exposure_iter'] = moves['exposure_iter'].fillna(-1).astype(int)
+    moves['flags'] = moves['flags'].fillna(0).astype(int)
+    # Replace ctrl_enabled=True/False with 0/1 for smaller CSV.
+    nna = np.count_nonzero(moves.ctrl_enabled.isna())
+    if nna > 0:
+        logging.warning(f'{nna} rows have invalid ctrl_enabled.')
+    moves['ctrl_enabled'] = moves['ctrl_enabled'].astype(int).fillna(-1)
+    # Replace full timestamp with hours relative to noon_before (local time).
+    noon_ts = pd.Timestamp(str(noon_before) + '+0000')
+    one_hr = pd.Timedelta(1, 'hour')
+    moves['time_recorded'] = np.round((moves['time_recorded'] - noon_ts) / one_hr, 5)
 
 
 def reduce_snapshot(snapshot, summary):
@@ -552,6 +575,8 @@ def main():
         help='overwrite any existing output files')
     parser.add_argument('--no-round', action='store_true',
         help='do not round floating point values for smaller CSV output')
+    parser.add_argument('--no-compress', action='store_true',
+        help='do not compress non-float columns for smaller CSV output')
     parser.add_argument('--setup-id', type=int, metavar='NNNNNNNN',
         help='exposure ID that starts the observing night')
     parser.add_argument('--front-id', type=int, metavar='NNNNNNNN',
