@@ -345,8 +345,23 @@ def run(args):
         valid = ~(moves.ptl_x.isna() | moves.ptl_y.isna() | moves.location.isna())
         moves.loc[valid, 'ptl_x'], moves.loc[valid, 'ptl_y'] = ptl2fp_nominal(
             moves.ptl_x[valid], moves.ptl_y[valid], moves.location[valid] // 1000)
+        # Extract and save intTP from the log_note.
+        sel = moves.log_note.str.contains('req_posintTP=') & moves.location.notna()
+        if not np.any(sel):
+            logging.warning('No log_notes with posintTP values!?')
+        def splitTP(note):
+            i1 = note.index('req_posintTP=(')
+            i2 = note.index(')', i1)
+            return [float(val) for val in note[i1+14:i2].split(',')]
+        intTP = moves[sel].log_note.apply(splitTP)
+        moves['req_t'] = np.nan
+        moves['req_p'] = np.nan
+        moves.loc[sel, 'req_t'] = intTP.apply(lambda d: d[0])
+        moves.loc[sel, 'req_p'] = intTP.apply(lambda d: d[1])
         # Extract and save ptlXYZ from the log_note.
-        sel = moves.log_note.str.contains('XYZ=') & ~moves.location.isna()
+        sel = moves.log_note.str.contains('req_ptlXYZ=') & moves.location.notna()
+        if not np.any(sel):
+            logging.warning('No log_notes with ptlXYZ values!?')
         msel = moves[sel]
         petal_locs = np.array(msel.location // 1000)
         def splitXYZ(note):
@@ -383,9 +398,15 @@ def run(args):
         # Flag rows that are followed immediately by an FVC feedback row.
         byloc = moves.groupby('location')
         moves['has_fvc_feedback'] = byloc.fvc_feedback.shift(-1, fill_value=False)
-        # Store the feedback POS_T,P as FVC_T,P or NaN if there is no FVC feedback.
+        # Compute fvc_t,p as our best guess of the FVC-verified angles.
+        # Use angles from an immediately following FVC feedback if present.
+        # Otherwise use pos_t,p if spots were measured (i.e. obs_x,y are valid)
+        # Otherwise set to NaN if angles were requested but not verified with an FVC image.
         moves['fvc_t'] = np.nan
         moves['fvc_p'] = np.nan
+        has_spot = moves.obs_x.notna() & moves.obs_y.notna()
+        moves.loc[has_spot, 'fvc_t'] = moves.loc[has_spot, 'pos_t']
+        moves.loc[has_spot, 'fvc_p'] = moves.loc[has_spot, 'pos_p']
         moves.loc[moves['has_fvc_feedback'], 'fvc_t'] = byloc.pos_t.shift(-1, fill_value=np.nan)
         moves.loc[moves['has_fvc_feedback'], 'fvc_p'] = byloc.pos_p.shift(-1, fill_value=np.nan)
         # Calculate the actual change in angles using fvc_t,p
