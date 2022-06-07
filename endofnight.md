@@ -2,6 +2,8 @@
 
 Describe the endofnight script: how is it run, maitained, etc
 
+Describe the checks it performs and summary statistics it reports.
+
 Describe the viewer at https://data.desi.lbl.gov/desi/users/dkirkby/endofnight/
 
 ## Data Products
@@ -43,6 +45,7 @@ Stored as `moves-YYYYMMDD.csv.gz` and derived from the rows added to the move ta
 Notes:
  - obs-ptl includes effects of [petal misalignments](https://observablehq.com/@dkirkby/desi-petal-metrology) implemented in PlateMaker (since ptl_x,y are calculated for nominal alignments)
  - obs-req is due to positioning errors and turbulence (or just turbulence for non-functional robots)
+ - act/req != 1 indicates a potential motor problem or collision
 
 ### Summary Table
 

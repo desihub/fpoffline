@@ -409,6 +409,12 @@ def run(args):
         # Compress non floating-point columns for smaller moves CSV output if requested.
         if not args.no_compress:
             compress_moves(moves, noon_before)
+        # Save to CSV
+        moves.to_csv(moves_csv, index=False, compression='gzip')
+        logging.info(f'Wrote {moves_csv.name} with {len(moves)} rows.')
+    else:
+        moves = pd.read_csv(moves_csv)
+        logging.info(f'Read {moves_csv.name} with {len(moves)} rows.')
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
