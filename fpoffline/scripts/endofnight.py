@@ -28,6 +28,7 @@ import fpoffline.io
 import fpoffline.db
 import fpoffline.fvc
 import fpoffline.const
+import fpoffline.util
 
 
 def run(args):
@@ -340,6 +341,10 @@ def run(args):
             moves.drop(columns=col_in, inplace=True) # Drop the original string column
         sum_move('move_val1', 'req_dt')
         sum_move('move_val2', 'req_dp')
+        # Replace any missing flags with 0 and force the column to be integer.
+        # Also rename "flags" to "mflags" to avoid collision with the flags() method.
+        moves['mflags'] = moves['flags'].fillna(0).astype(int)
+        moves.drop(columns=['flags'], inplace=True)
         # Transform PTL_X,Y corresponding to OBS_X,Y into nominal FP coords
         # for a direct probe of the petal alignments.
         valid = ~(moves.ptl_x.isna() | moves.ptl_y.isna() | moves.location.isna())
@@ -417,6 +422,14 @@ def run(args):
         moves['act_dp'] = moves.fvc_p - moves.last_fvc_p
         # Remove temporary columns and only keep fvc_t,p and act_dt,dp
         moves.drop(columns=['fvc_feedback', 'has_fvc_feedback', 'last_fvc_t', 'last_fvc_p'], inplace=True)
+        # Flag any moves blocked by a comms error or to avoid a collision.
+        mask = fpoffline.util.stringToFlag('FROZEN|UNREACHABLE|REJECTED|OVERLAP|EXPERTLIMIT|BOUNDARIES')
+        sel = moves.mflags.notna() & moves.log_note.notna()
+        anticollide = ~moves[sel].log_note.str.startswith('req_posintTP=') & ((moves[sel].mflags & mask) != 0)
+        badcomms = moves[sel].log_note.str.startswith('move canceled due to communication error')
+        moves['blocked'] = False
+        moves.loc[sel, 'blocked'] = anticollide | badcomms
+        logging.info(f'Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance.')
         # Round floating-point values for smaller moves CSV output if requested.
         if not args.no_round:
             # Round angles (t,p) to 0.01 deg.
@@ -471,12 +484,13 @@ def compress_moves(moves, noon_before):
     # by replacing NA=nan with -1 or 0.
     moves['exposure_id'] = moves['exposure_id'].fillna(-1).astype(int)
     moves['exposure_iter'] = moves['exposure_iter'].fillna(-1).astype(int)
-    moves['flags'] = moves['flags'].fillna(0).astype(int)
-    # Replace ctrl_enabled=True/False with 0/1 for smaller CSV.
-    nna = np.count_nonzero(moves.ctrl_enabled.isna())
-    if nna > 0:
-        logging.warning(f'{nna} rows have invalid ctrl_enabled.')
-    moves['ctrl_enabled'] = moves['ctrl_enabled'].astype(int).fillna(-1)
+    # Replace boolean columns with 0=False, 1=True, -1=Invalid for smaller CSV.
+    # There shouldn't normally be any -1=Invalid values.
+    for name in ('ctrl_enabled', 'blocked'):
+        nna = np.count_nonzero(moves[name].isna())
+        if nna > 0:
+            logging.warning(f'{nna} rows have invalid {name}.')
+        moves[name] = moves[name].astype(int).fillna(-1)
     # Replace full timestamp with hours relative to noon_before (local time).
     noon_ts = pd.Timestamp(str(noon_before) + '+0000')
     one_hr = pd.Timedelta(1, 'hour')

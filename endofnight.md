@@ -28,11 +28,11 @@ Stored as `moves-YYYYMMDD.csv.gz` and derived from the rows added to the move ta
 | pos_id | - | Positioner ID string, e.g. M01234 |
 | location | - | 1000 * PETAL_LOC + DEVICE_LOC |
 | ctrl_enabled | - | 0 = disabled, 1 = enabled (non-functional devices are always disabled) |
-| move_cmd | - | string describing the move performed |
-| log_note | - | log note attached to this move |
-| exposure_id | - | unique exposure identifier |
-| exposure_iter | - | iteration within this exposure (0=blind, 1=correction) |
-| flags | - | bitmask of status flags documented [here](https://desi.lbl.gov/trac/wiki/FPS/PositionerFlags) |
+| move_cmd | - | String describing the move performed |
+| log_note | - | Log note attached to this move |
+| exposure_id | - | Unique exposure identifier |
+| exposure_iter | - | Uteration within this exposure (0=blind, 1=correction) |
+| mflags | - | Bitmask of status flags documented [here](https://desi.lbl.gov/trac/wiki/FPS/PositionerFlags) (renamed to avoid collision with the [flags method](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.flags.html)) |
 | pos_t,p | deg | Internal theta and phi angles recorded in the moves database |
 | req_t,p | deg | Requested angles stored in the log_note as "req_posintTP=(...,...)" if available or NaN |
 | fvc_t,p | deg | Angles derived from an FVC spot if available or NaN. Uses an immediately following FVC feedback if present. |
@@ -40,8 +40,9 @@ Stored as `moves-YYYYMMDD.csv.gz` and derived from the rows added to the move ta
 | act_dt,dp | deg | Actual change of angles obtained as the change in fvc_t,p from the previous to current row |
 | ptl_x,y | mm | PTL coords from the moves DB converted to FP coords with nominal petal alignments |
 | obs_x,y | mm | FP coords from the moves DB, derived from FVC spots |
-| req_x,y | mm | requested petal coords from log note converted to FP coords with nominal petal alignments |
-| pred_x,y| mm | predicted FP coords obtained by transforming pos_t,p using desimeter and nominal petal alignments |
+| req_x,y | mm | Requested petal coords from log note converted to FP coords with nominal petal alignments |
+| pred_x,y| mm | Predicted FP coords obtained by transforming pos_t,p using desimeter and nominal petal alignments |
+| blocked | - | Log note and flags indicate that this move was blocked by a comms error or to avoid a collision |
 
 Notes:
  - obs-ptl includes effects of [petal misalignments](https://observablehq.com/@dkirkby/desi-petal-metrology) implemented in PlateMaker (since ptl_x,y are calculated for nominal alignments)
