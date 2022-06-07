@@ -414,6 +414,16 @@ def run(args):
         moves['act_dp'] = moves.fvc_p - moves.last_fvc_p
         # Remove temporary columns and only keep fvc_t,p and act_dt,dp
         moves.drop(columns=['fvc_feedback', 'has_fvc_feedback', 'last_fvc_t', 'last_fvc_p'], inplace=True)
+        # Round floating-point values for smaller moves CSV output if requested.
+        if not args.no_round:
+            # Round angles (t,p) to 0.01 deg.
+            for name in 'pos_,fvc_,req_d,act_d'.split(','):
+                moves[name + 't'] = np.round(moves[name + 't'], 2)
+                moves[name + 'p'] = np.round(moves[name + 'p'], 2)
+            # Round FP coords (x,y) to 0.01 microns.
+            for name in 'ptl,obs,req,pred'.split(','):
+                moves[name + '_x'] = np.round(moves[name + '_x'], 5)
+                moves[name + '_y'] = np.round(moves[name + '_y'], 5)
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
@@ -540,6 +550,8 @@ def main():
         help='night to process or use the most recent night if not specified')
     parser.add_argument('--overwrite', action='store_true',
         help='overwrite any existing output files')
+    parser.add_argument('--no-round', action='store_true',
+        help='do not round floating point values for smaller CSV output')
     parser.add_argument('--setup-id', type=int, metavar='NNNNNNNN',
         help='exposure ID that starts the observing night')
     parser.add_argument('--front-id', type=int, metavar='NNNNNNNN',
