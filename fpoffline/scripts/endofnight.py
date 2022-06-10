@@ -552,28 +552,32 @@ def run(args):
     return 0
 
 
+log_note_rules = [
+    ("=D", "Positioner is disabled"),
+    ("=R", "Target request denied"),
+    ("=F", "handle_fvc_feedback"),
+    ("=S", "Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS"),
+    ("=U", "tp_update_posTP"),
+    ("=E", "end of night park_positioners observer script"),
+    ("TP=", "req_posintTP="),
+    ("XYZ=", "req_ptlXYZ="),
+]
+
+move_cmd_rules = [
+    ("=A", "; (auto backlash backup); (auto final creep)"),
+    ("dXY=", "obsdXdY="),
+]
+
 def compress_moves(moves, noon_before):
     """Compress non floating-point columns in the moves table for smaller CSV output.
     Operations are performed in place on the dataframe passed to this function.
     """
-    # Compress the log notes
-    moves.log_note = (
-        moves.log_note
-        .str.replace("Positioner is disabled", "=D", regex=False)
-        .str.replace("Target request denied", "=R", regex=False)
-        .str.replace("handle_fvc_feedback", "=F", regex=False)
-        .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "=S", regex=False)
-        .str.replace("tp_update_posTP", "=U", regex=False)
-        .str.replace("end of night park_positioners observer script", "=E", regex=False)
-        .str.replace("req_posintTP=", "TP=", regex=False)
-        .str.replace("req_ptlXYZ=", "XYZ=", regex=False)
-    )
-    # Compress the move_cmd
-    moves.move_cmd = (
-        moves.move_cmd
-        .str.replace("; (auto backlash backup); (auto final creep)", "$A", regex=False)
-        .str.replace("obsdXdY=", "dXY=", regex=False)
-    )
+    # Compress the log_note column
+    for (short,long) in log_note_rules:
+        moves.log_note = moves.log_note.str.replace(long, short, regex=False)
+    # Compress the move_cmd column
+    for (short,long) in move_cmd_rules:
+        moves.move_cmd = moves.move_cmd.str.replace(long, short, regex=False)
     # Change int columns with NAs that are represented as floats back to ints
     # by replacing NA=nan with -1 or 0.
     moves['exposure_id'] = moves['exposure_id'].fillna(-1).astype(int)
@@ -589,6 +593,34 @@ def compress_moves(moves, noon_before):
     noon_ts = pd.Timestamp(str(noon_before) + '+0000')
     one_hr = pd.Timedelta(1, 'hour')
     moves['time_recorded'] = np.round((moves['time_recorded'] - noon_ts) / one_hr, 5)
+
+
+def uncompress_moves(moves, night):
+    """Undo the transformations of compress_moves.
+    Operations are performed in place on the dataframe passed to this function.
+    """
+    # Uncompress the log_note column
+    for (short,long) in log_note_rules:
+        moves.log_note = moves.log_note.str.replace(short, long, regex=False)
+    # Uncompress the move_cmd column
+    for (short,long) in move_cmd_rules:
+        moves.move_cmd = moves.move_cmd.str.replace(short, long, regex=False)
+    # Set special values in int columns to NA.
+    moves.loc[moves.exposure_id == -1, 'exposure_id'] = pd.NA
+    moves.loc[moves.exposure_iter == -1, 'exposure_iter'] = pd.NA
+    # Convert 0/1/-1 values back to False/True/NA.
+    for name in ('ctrl_enabled', 'blocked'):
+        isna = moves[name] == -1
+        moves[name] = moves[name].astype(bool)
+        moves.loc[isna, name] = pd.NA
+    # Convert time_recorded from hours relative to noon_before back to timestamps.
+    N = str(night)
+    year, month, day = int(N[0:4]), int(N[4:6]), int(N[6:8])
+    midnight = astropy.time.Time(datetime.datetime(year, month, day, 12) + datetime.timedelta(hours=19))
+    noon_before = midnight - astropy.time.TimeDelta(12 * 3600, format='sec')
+    noon_ts = pd.Timestamp(str(noon_before) + '+0000')
+    one_hr = pd.Timedelta(1, 'hour')
+    moves['time_recorded'] = noon_ts + moves.time_recorded * one_hr
 
 
 def reduce_snapshot(snapshot, summary):
