@@ -429,7 +429,6 @@ def run(args):
         badcomms = moves[sel].log_note.str.startswith('move canceled due to communication error')
         moves['blocked'] = False
         moves.loc[sel, 'blocked'] = anticollide | badcomms
-        logging.info(f'Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance.')
         # Round floating-point values for smaller moves CSV output if requested.
         if not args.no_round:
             # Round angles (t,p) to 0.01 deg.
@@ -449,6 +448,7 @@ def run(args):
     else:
         moves = pd.read_csv(moves_csv)
         logging.info(f'Read {moves_csv.name} with {len(moves)} rows.')
+    logging.info(f'Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance.')
 
     # Get and save latest spot (x,y) for each location.
     #last_obs = moves[np.isfinite(moves.obs_x) & np.isfinite(moves.obs_y)].groupby('location').last()
@@ -499,7 +499,42 @@ def run(args):
     # Do not classify the ETC devices as non-functional.
     etc = np.isin(summary['DEVICE_LOC'], [461, 501])
     summary['FUNC'][etc] = 0
-    logging.info(f'Found {np.count_nonzero(summary["FUNC"])} non-functional devices')
+    logging.info(f'Found {np.count_nonzero(summary["FUNC"])} non-functional devices.')
+
+    # Flag categories of functional robots for visual inspection.
+    summary['INSPECT'] = np.zeros(len(summary), np.uint32)
+    # bit 0 = functional devices that are disabled at the end of the night.
+    nonfunc = summary['FUNC'] != 0
+    disabled = (summary['FLAGS'] & (1<<16)) != 0
+    bit0 = disabled & ~nonfunc
+    summary['INSPECT'][bit0] |= (1<<0)
+    logging.info(f'Bit-0: found {np.count_nonzero(bit0)} disabled & functional devices.')
+    # bit 1 = enabled and not parked in theta.
+    bit1 = (np.abs(summary['POS_T']) > 10) & ~(disabled | nonfunc | etc)
+    summary['INSPECT'][bit1] |= (1<<1)
+    logging.info(f'Bit-1: found {np.count_nonzero(bit1)} enabled devices not parked in theta.')
+    # bit 2 = enabled and not parked in phi.
+    bit2 = (np.abs(summary['POS_P'] + summary['OFFSET_P'] - 150) > 10) & ~(disabled | nonfunc | etc)
+    summary['INSPECT'][bit2] |= (1<<2)
+    logging.info(f'Bit-2: found {np.count_nonzero(bit2)} enabled devices not parked in phi.')
+    # bit 3 = FP (x,y) does not match angles.
+    dxy = np.hypot(summary['OBS_X'] - summary['PRED_X'], summary['OBS_Y'] - summary['PRED_Y'])
+    bit3 = np.isfinite(dxy) & (dxy > 0.5) & ~(disabled | nonfunc | etc) # mm
+    summary['INSPECT'][bit3] |= (1<<3)
+    logging.info(f'Bit-3: found {np.count_nonzero(bit3)} devices with inconsistent angles and spot.')
+    # bit 4 = robots with a bad match reported at any time during the night.
+    badmatch_sel = moves.log_note.str.startswith('Auto-disabling due to bad match').fillna(False)
+    badmatch_locs = np.array(moves[badmatch_sel].groupby('location').last().index)
+    bit4 = np.isin(summary['LOCATION'], badmatch_locs)
+    summary['INSPECT'][bit4] |= (1<<4)
+    logging.info(f'Bit-4: found {np.count_nonzero(bit4)} devices with a bad spot match.')
+    # bit 5 = functional robot ended up in ambiguous theta zone.
+    # theta_hardstop_ambiguous_zone() defined in plate_control/petal/posmodel.py
+    # theta_hardstop_ambig_tol defined in plate_control/petal/posconstants.py
+    theta_hardstop_ambig_tol = 8
+    bit5 = (np.abs(summary['POS_T']) >= 360 - summary['PHYSICAL_RANGE_T'] / 2 - theta_hardstop_ambig_tol) & ~(nonfunc | etc)
+    summary['INSPECT'][bit5] |= (1<<5)
+    logging.info(f'Bit-5: found {np.count_nonzero(bit5)} devices in ambiguous theta zone.')
 
     # Save the summary table as ECSV (so the metadata is included)
     summary.meta = dict(summary.meta) # Don't use an OrderedDict
