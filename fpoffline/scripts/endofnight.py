@@ -272,24 +272,26 @@ def run(args):
                     raise e
             os.putenv('DESI_LOGLEVEL', desi_loglevel)
 
-    # Determine the end time to use for DB queries if not already set.
-    snap_time = snap_time.strftime("%Y-%m-%dT%H:%M:%S+0000")
+    # Determine the time intervals to use for DB queries.
+    calib_start = snap_time.strftime("%Y-%m-%dT%H:%M:%S+0000")
+    moves_start = noon_before.strftime("%Y-%m-%dT%H:%M:%S+0000")
     if end_time is None:
         end_time = noon_after.strftime("%Y-%m-%dT%H:%M:%S+0000")
         logging.warning(f'using default end_time {end_time} in absence of any park FVC images')
-    # Save the end time to use for DB queries.
+    summary.meta['calib_start'] = str(calib_start)
+    summary.meta['moves_start'] = str(moves_start)
     summary.meta['end_time'] = str(end_time)
 
     # Look for any calib updates since the snapshot.
     calib_csv = output / f'calib-{args.night}.csv'
     if args.overwrite or not calib_csv.exists():
-        logging.info(f'Fetching calib DB updates during {snap_time} - {end_time}...')
+        logging.info(f'Fetching calib DB updates during {calib_start} - {end_time}...')
         tables = []
         for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
             table_name = f'posmovedb.positioner_calibration_p{petal_id}'
             sql = f'''
                 select * from {table_name} where
-                    (time_recorded > timestamp '{snap_time}') and
+                    (time_recorded > timestamp '{calib_start}') and
                     (time_recorded < timestamp '{end_time}')
                 order by time_recorded asc
             '''
@@ -309,7 +311,7 @@ def run(args):
     # Look for move updates since the snapshot.
     moves_csv = output / f'moves-{args.night}.csv.gz'
     if args.overwrite or not moves_csv.exists():
-        logging.info(f'Fetching moves DB updates during {snap_time} - {end_time}...')
+        logging.info(f'Fetching moves DB updates during {moves_start} - {end_time}...')
         tables = []
         for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
             table_name = f'posmovedb.positioner_moves_p{petal_id}'
@@ -320,7 +322,7 @@ def run(args):
             # We don't bother sorting by time_recorded in the query since we do it globally after concatenating all petals.
             sql = f'''
                 select {move_cols} from {table_name} where
-                    (time_recorded > timestamp '{snap_time}') and
+                    (time_recorded > timestamp '{moves_start}') and
                     (time_recorded < timestamp '{end_time}')
             '''
             table = DB.query(sql, maxrows=200000)
@@ -407,13 +409,14 @@ def run(args):
         # Use angles from an immediately following FVC feedback if present.
         # Otherwise use pos_t,p if spots were measured (i.e. obs_x,y are valid)
         # Otherwise set to NaN if angles were requested but not verified with an FVC image.
+        # Rows with FVC feedback have fvc_t,p set to pos_t,p.
         moves['fvc_t'] = np.nan
         moves['fvc_p'] = np.nan
-        has_spot = moves.obs_x.notna() & moves.obs_y.notna()
+        has_spot = (moves.obs_x.notna() & moves.obs_y.notna()) | moves.fvc_feedback
         moves.loc[has_spot, 'fvc_t'] = moves.loc[has_spot, 'pos_t']
         moves.loc[has_spot, 'fvc_p'] = moves.loc[has_spot, 'pos_p']
-        moves.loc[moves['has_fvc_feedback'], 'fvc_t'] = byloc.pos_t.shift(-1, fill_value=np.nan)
-        moves.loc[moves['has_fvc_feedback'], 'fvc_p'] = byloc.pos_p.shift(-1, fill_value=np.nan)
+        moves.loc[moves.has_fvc_feedback, 'fvc_t'] = byloc.pos_t.shift(-1, fill_value=np.nan)
+        moves.loc[moves.has_fvc_feedback, 'fvc_p'] = byloc.pos_p.shift(-1, fill_value=np.nan)
         # Calculate the actual change in angles using fvc_t,p
         byloc = moves.groupby('location')
         moves['last_fvc_t'] = byloc.fvc_t.shift(+1, fill_value=np.nan)
@@ -556,12 +559,12 @@ def compress_moves(moves, noon_before):
     # Compress the log notes
     moves.log_note = (
         moves.log_note
-        .str.replace("Positioner is disabled", "$D", regex=False)
-        .str.replace("Target request denied", "$R", regex=False)
-        .str.replace("handle_fvc_feedback", "$F", regex=False)
-        .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "$S", regex=False)
-        .str.replace("tp_update_posTP", "$U", regex=False)
-        .str.replace("end of night park_positioners observer script", "$E", regex=False)
+        .str.replace("Positioner is disabled", "=D", regex=False)
+        .str.replace("Target request denied", "=R", regex=False)
+        .str.replace("handle_fvc_feedback", "=F", regex=False)
+        .str.replace("Stored new: OBS_X OBS_Y PTL_X PTL_Y PTL_Z FLAGS", "=S", regex=False)
+        .str.replace("tp_update_posTP", "=U", regex=False)
+        .str.replace("end of night park_positioners observer script", "=E", regex=False)
         .str.replace("req_posintTP=", "TP=", regex=False)
         .str.replace("req_ptlXYZ=", "XYZ=", regex=False)
     )
@@ -701,7 +704,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Run the focal-plane end of night analysis',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--night', type=str, metavar='YYYYMMDD',
+    parser.add_argument('--night', type=int, metavar='YYYYMMDD',
         help='night to process or use the most recent night if not specified')
     parser.add_argument('--overwrite', action='store_true',
         help='overwrite any existing output files')
