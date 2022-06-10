@@ -1,14 +1,22 @@
-"""Utilities for reading focal plane files.
+"""Utilities for reading focal plane engineering files
 """
 import pathlib
+import datetime
 
 import numpy as np
 
 import astropy.time
 import astropy.table
 
+import pandas as pd
 
-def get_snapshot(timestamp=None, maxage_days=5, path='/global/cfs/cdirs/desi/engineering/focalplane/calibration'):
+import fpoffline.scripts.endofnight
+
+
+FP_ENG = pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane')
+
+
+def get_snapshot(timestamp=None, maxage_days=5, path=FP_ENG / 'calibration'):
     DIR = pathlib.Path(path)
     oneday = astropy.time.TimeDelta(1, format='jd')
     timestamp = timestamp or astropy.time.Time.now()
@@ -30,7 +38,8 @@ def get_snapshot(timestamp=None, maxage_days=5, path='/global/cfs/cdirs/desi/eng
                     print('You need astropy >= 5.0.4.  If you are getting 5.0 from the desiconda module "unset PYTHONPATH" may help.')
                 raise e
 
-def get_index(before=None, path='/global/cfs/cdirs/desi/engineering/focalplane/PositionerIndexTable/index_files'):
+
+def get_index(before=None, path=FP_ENG / 'PositionerIndexTable/index_files'):
     """Locate and read the latest positioner index table.
 
     The returned table is augmented by FIBER_ID calculated as
@@ -73,3 +82,39 @@ def get_index(before=None, path='/global/cfs/cdirs/desi/engineering/focalplane/P
     table.sort('LOCATION')
     table.meta['index_name'] = file.name
     return table
+
+
+def load_endofnight(night, verbose=True, parent_dir=FP_ENG / 'endofnight'):
+
+    path = pathlib.Path(parent_dir)
+    if not path.exists():
+        raise ValueError('Non-existent parent_dir "{parent_dir}".')
+    path = path / str(night)
+    if not path.exists():
+        raise ValueError('No directory found for night {night}.')
+
+    summary = path / f'fp-{night}.ecsv'
+    if not summary.exists():
+        print(f'WARNING: missing end-of-night summary {summary}')
+        summary = None
+    else:
+        summary = astropy.table.Table.read(summary)
+
+    moves = path / f'moves-{night}.csv.gz'
+    if not moves.exists():
+        print(f'WARNING: missing moves table {moves}')
+        moves = None
+    else:
+        moves = pd.read_csv(moves)
+        fpoffline.scripts.endofnight.uncompress_moves(moves, night)
+
+    if verbose:
+        print(f'Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance.')
+        print(f'Found {np.count_nonzero(summary["FUNC"])} non-functional devices.')
+        inspect = summary['INSPECT']
+        groups = summary.meta['inspect_groups']
+        for bit, description in enumerate(groups):
+            nbit = np.count_nonzero(summary['INSPECT'] & (1 << bit) != 0)
+            print(f'Found {nbit} {description}.')
+
+    return summary, moves
