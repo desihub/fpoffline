@@ -482,8 +482,26 @@ def run(args):
     summary['PRED_X'][valid], summary['PRED_Y'][valid] = ptl2fp_nominal(
         x_ptl, y_ptl, summary['PETAL_LOC'][valid])
 
+    # Get and save latest flags for each location.
+    last_flags = moves[moves.mflags!=0].groupby('location').last()
+    idx = np.searchsorted(summary['LOCATION'], last_flags.index)
+    assert np.all(summary['LOCATION'][idx] == last_flags.index)
+    summary['FLAGS'] = np.zeros(len(summary), np.uint32)
+    summary['FLAGS'][idx] = last_flags.mflags
+
+    # Classify non-functional devices.
+    jdx = np.searchsorted(summary['LOCATION'], snapshot['LOCATION'])
+    assert np.all(summary['LOCATION'][jdx] == snapshot['LOCATION'])
+    summary['FUNC'] = 0
+    summary['FUNC'][jdx[snapshot['DEVICE_CLASSIFIED_NONFUNCTIONAL']]] = 1 # generic non-functional
+    summary['FUNC'][jdx[~snapshot['FIBER_INTACT']]] = 2 # non-functional with bad fiber
+    summary['FUNC'][summary['FLAGS'] & (1<<30) != 0] = 3 # non-functional with relay off
+    # Do not classify the ETC devices as non-functional.
+    etc = np.isin(summary['DEVICE_LOC'], [461, 501])
+    summary['FUNC'][etc] = 0
+    logging.info(f'Found {np.count_nonzero(summary["FUNC"])} non-functional devices')
+
     # Save the summary table as ECSV (so the metadata is included)
-    # TODO: round float values
     summary.meta = dict(summary.meta) # Don't use an OrderedDict
     summary.write(output / f'fp-{args.night}.ecsv', overwrite=True)
 
