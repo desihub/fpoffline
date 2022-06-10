@@ -309,7 +309,7 @@ def run(args):
     # Look for move updates since the snapshot.
     moves_csv = output / f'moves-{args.night}.csv.gz'
     if args.overwrite or not moves_csv.exists():
-        print(f'Fetching moves DB updates during {snap_time} - {end_time}...')
+        logging.info(f'Fetching moves DB updates during {snap_time} - {end_time}...')
         tables = []
         for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
             table_name = f'posmovedb.positioner_moves_p{petal_id}'
@@ -449,6 +449,38 @@ def run(args):
     else:
         moves = pd.read_csv(moves_csv)
         logging.info(f'Read {moves_csv.name} with {len(moves)} rows.')
+
+    # Get and save latest spot (x,y) for each location.
+    #last_obs = moves[np.isfinite(moves.obs_x) & np.isfinite(moves.obs_y)].groupby('location').last()
+    last_obs = moves[moves.obs_x.notna() & moves.obs_y.notna()].groupby('location').last()
+    idx = np.searchsorted(summary['LOCATION'], last_obs.index)
+    assert np.all(summary['LOCATION'][idx] == last_obs.index)
+    summary['OBS_X'] = np.nan
+    summary['OBS_Y'] = np.nan
+    summary['OBS_X'][idx] = last_obs.obs_x
+    summary['OBS_Y'][idx] = last_obs.obs_y
+
+    # Get and save latest angles for each location.
+    last_move = moves.groupby('location').last()
+    idx = np.searchsorted(summary['LOCATION'], last_move.index)
+    assert np.all(summary['LOCATION'][idx] == last_move.index)
+    summary['POS_T'] = np.nan
+    summary['POS_P'] = np.nan
+    summary['POS_T'][idx] = last_move.pos_t
+    summary['POS_P'][idx] = last_move.pos_p
+
+    # Calculate the predicted FP x,y from these final angles using desimeter
+    # and nominal petal alignments.
+    valid = np.isfinite(summary['POS_T']) & np.isfinite(summary['POS_P'])
+    x_ptl, y_ptl = int2ptl(
+        summary['POS_T'][valid], summary['POS_P'][valid],
+        summary['OFFSET_T'][valid], summary['OFFSET_P'][valid],
+        summary['LENGTH_R1'][valid], summary['LENGTH_R2'][valid],
+        summary['OFFSET_X'][valid], summary['OFFSET_Y'][valid])
+    summary['PRED_X'] = np.nan
+    summary['PRED_Y'] = np.nan
+    summary['PRED_X'][valid], summary['PRED_Y'][valid] = ptl2fp_nominal(
+        x_ptl, y_ptl, summary['PETAL_LOC'][valid])
 
     # Save the summary table as ECSV (so the metadata is included)
     # TODO: round float values
