@@ -503,38 +503,44 @@ def run(args):
 
     # Flag categories of functional robots for visual inspection.
     summary['INSPECT'] = np.zeros(len(summary), np.uint32)
+    groups = [ ]
     # bit 0 = functional devices that are disabled at the end of the night.
     nonfunc = summary['FUNC'] != 0
     disabled = (summary['FLAGS'] & (1<<16)) != 0
     bit0 = disabled & ~nonfunc
     summary['INSPECT'][bit0] |= (1<<0)
-    logging.info(f'Bit-0: found {np.count_nonzero(bit0)} disabled & functional devices.')
-    # bit 1 = enabled and not parked in theta.
+    groups.append('disabled: disabled & functional devices')
+     # bit 1 = enabled and not parked in theta.
     bit1 = (np.abs(summary['POS_T']) > 10) & ~(disabled | nonfunc | etc)
     summary['INSPECT'][bit1] |= (1<<1)
-    logging.info(f'Bit-1: found {np.count_nonzero(bit1)} enabled devices not parked in theta.')
+    groups.append('unparked-T: enabled devices not parked in theta')
     # bit 2 = enabled and not parked in phi.
     bit2 = (np.abs(summary['POS_P'] + summary['OFFSET_P'] - 150) > 10) & ~(disabled | nonfunc | etc)
     summary['INSPECT'][bit2] |= (1<<2)
-    logging.info(f'Bit-2: found {np.count_nonzero(bit2)} enabled devices not parked in phi.')
+    groups.append('unparked-P: enabled devices not parked in phi')
     # bit 3 = FP (x,y) does not match angles.
     dxy = np.hypot(summary['OBS_X'] - summary['PRED_X'], summary['OBS_Y'] - summary['PRED_Y'])
     bit3 = np.isfinite(dxy) & (dxy > 0.5) & ~(disabled | nonfunc | etc) # mm
     summary['INSPECT'][bit3] |= (1<<3)
-    logging.info(f'Bit-3: found {np.count_nonzero(bit3)} devices with inconsistent angles and spot.')
+    groups.append('angles!=spot: devices with inconsistent angles and spot')
     # bit 4 = robots with a bad match reported at any time during the night.
     badmatch_sel = moves.log_note.str.startswith('Auto-disabling due to bad match').fillna(False)
     badmatch_locs = np.array(moves[badmatch_sel].groupby('location').last().index)
     bit4 = np.isin(summary['LOCATION'], badmatch_locs)
     summary['INSPECT'][bit4] |= (1<<4)
-    logging.info(f'Bit-4: found {np.count_nonzero(bit4)} devices with a bad spot match.')
+    groups.append('badmatch: functional devices with a bad spot match')
     # bit 5 = functional robot ended up in ambiguous theta zone.
     # theta_hardstop_ambiguous_zone() defined in plate_control/petal/posmodel.py
     # theta_hardstop_ambig_tol defined in plate_control/petal/posconstants.py
     theta_hardstop_ambig_tol = 8
     bit5 = (np.abs(summary['POS_T']) >= 360 - summary['PHYSICAL_RANGE_T'] / 2 - theta_hardstop_ambig_tol) & ~(nonfunc | etc)
     summary['INSPECT'][bit5] |= (1<<5)
-    logging.info(f'Bit-5: found {np.count_nonzero(bit5)} devices in ambiguous theta zone.')
+    groups.append('ambiguous: functional devices in ambiguous theta zone')
+    # Print a summary.
+    for bit, description in enumerate(groups):
+        nbit = np.count_nonzero(summary['INSPECT'] & (1 << bit) != 0)
+        logging.info(f'Found {nbit} {description}.')
+    summary.meta['inspect_groups'] = groups
 
     # Save the summary table as ECSV (so the metadata is included)
     summary.meta = dict(summary.meta) # Don't use an OrderedDict
