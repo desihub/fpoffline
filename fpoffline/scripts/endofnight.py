@@ -10,6 +10,7 @@ import math
 from ast import literal_eval as safe_eval
 
 import numpy as np
+import numpy.polynomial
 
 import pandas as pd
 
@@ -539,6 +540,14 @@ def run(args):
     bit5 = (np.abs(summary['POS_T']) >= 360 - summary['PHYSICAL_RANGE_T'] / 2 - theta_hardstop_ambig_tol) & ~(nonfunc | etc)
     summary['INSPECT'][bit5] |= (1<<5)
     groups.append('ambiguous: functional devices in ambiguous theta zone')
+    # bits 6 and 7 are suspected bad motors.
+    bad_theta, bad_phi = find_bad_motors(moves)
+    bit6 = np.isin(summary['DEVICE_ID'], bad_theta)
+    summary['INSPECT'][bit6] |= (1<<6)
+    groups.append('bad-T: suspected bad theta motor')
+    bit7 = np.isin(summary['DEVICE_ID'], bad_phi)
+    summary['INSPECT'][bit7] |= (1<<7)
+    groups.append('bad-P: suspected bad phi motor')
     # Print a summary.
     for bit, description in enumerate(groups):
         nbit = np.count_nonzero(summary['INSPECT'] & (1 << bit) != 0)
@@ -550,6 +559,42 @@ def run(args):
     summary.write(output / f'fp-{args.night}.ecsv', overwrite=True)
 
     return 0
+
+
+def find_bad_motors(moves, tcut=3, pcut=6, ncut_rel=0.1, ncut_abs=3, max_slope_dev=0.04):
+    """Analyze the move table to find suspected bad motors.
+    """
+    # Find the median number of moves with measured spots for enabled positioners.
+    sel = (moves.ctrl_enabled==1) & moves.fvc_t.notna() & moves.pos_t.notna() & moves.fvc_p.notna() & moves.pos_p.notna()
+    nmedian = round(moves[sel].groupby('pos_id').pos_t.count().median())
+    # Calculate the threshold for bad moves.
+    ncut = round(max(ncut_abs, ncut_rel * nmedian))
+    logging.info(f'Looking for motors with > {ncut} bad moves (median # of moves is {nmedian})')
+    if ncut == ncut_abs:
+        logging.warning('Not enough moves for reliable motor analysis')
+
+    bad_motors = dict(theta=[], phi=[])
+    for (axis, cut) in zip(('theta', 'phi'), (tcut, pcut)):
+        a = axis[0]
+        pos = moves[f'pos_{a}']
+        fvc = moves[f'fvc_{a}']
+        req = moves[f'req_d{a}']
+        act = moves[f'act_d{a}']
+        # Look for moves with angular errors that exceed the cut.
+        sel1 = (moves.ctrl_enabled==1) & (moves.blocked==0) & (np.abs(fvc - pos) > cut)
+        nsel = moves[sel1].groupby('pos_id').pos_t.count()
+        bad_posid = nsel[nsel > ncut].index.tolist()
+        for posid in bad_posid:
+            # Find the first move that exceeded the cut.
+            first_bad = moves[sel1 & (moves.pos_id == posid)].iloc[0]
+            # Do a linear fit to actual vs requested moves starting from the first bad move.
+            sel2 = sel & (moves.pos_id == posid) & req.notna() & act.notna() & (moves.time_recorded >= first_bad.time_recorded)
+            #slope, intercept = scipy.stats.siegelslopes(act[sel2], req[sel2])
+            _, slope = numpy.polynomial.Polynomial.fit(req[sel2], act[sel2], 1, domain=[-1,1])
+            if np.abs(slope - 1) > max_slope_dev:
+                logging.info(f'{posid} {axis} has {nsel[posid]} moves that missed by >{cut} deg and slope {slope:.2f} from expid {first_bad.exposure_id}')
+                bad_motors[axis].append(posid)
+    return bad_motors['theta'], bad_motors['phi']
 
 
 log_note_rules = [
