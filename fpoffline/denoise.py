@@ -5,8 +5,6 @@ import pathlib
 
 from fpoffline.denoise_utils.torch_model import DnCNN_B
 from fpoffline.denoise_utils.numpy_model import np_DnCNN
-# from denoise_utils.torch_model import DnCNN_B
-# from denoise_utils.numpy_model import np_DnCNN
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
