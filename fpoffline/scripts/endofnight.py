@@ -30,8 +30,8 @@ import fpoffline.db
 import fpoffline.fvc
 import fpoffline.const
 import fpoffline.util
-#import fpoffline.denoise_utils.denoise_numpy
-#import fpoffline.denoise_utils.denoise_torch
+#import fpoffline.denoise_torch
+#import fpoffline.denoise_numpy
 
 
 def run(args):
@@ -202,8 +202,8 @@ def run(args):
                 logging.info(f'Generating {front_img} from expid {args.front_id}...')
                 data = fitsio.read(str(front_fits), ext='F0000')
                 data = fpoffline.fvc.process_front_illuminated(data)
-                # data = fpoffline.denoise_utils.denoise_torch(data)
-                # data = fpoffline.denoise_utils.denoise_numpy(data)
+                # data = fpoffline.denoise_torch.denoise(data)
+                # data = fpoffline.denoise_numpy.denoise(data)
                 fpoffline.fvc.plot_fvc(data, color='cividis', save=front_img, quality=75)
 
     if args.back_id or args.park_id:
