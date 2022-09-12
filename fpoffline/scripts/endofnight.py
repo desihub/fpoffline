@@ -65,7 +65,7 @@ def run(args):
     noon_after = midnight + twelve_hours
 
     # Load the most recent database snapshot.
-    snapshot, snap_time = fpoffline.io.get_snapshot(astropy.time.Time(midnight, format='datetime'))
+    snapshot, snap_time = fpoffline.io.get_snapshot(astropy.time.Time(midnight, format='datetime'), path=args.snap_dir)
     snapshot['LOCATION'] = snapshot['PETAL_LOC']*1000 + snapshot['DEVICE_LOC']
     snapshot.sort('LOCATION')
     logging.info(f'Loaded snapshot {snapshot.meta["name"]}')
@@ -803,6 +803,9 @@ def main():
     parser.add_argument('--data-dir', type=pathlib.Path, metavar='PATH',
         default=pathlib.Path('/global/cfs/cdirs/desi/spectro/data'),
         help='directory containing raw data products under NIGHT/EXPID/')
+    parser.add_argument('--snap-dir', type=pathlib.Path, metavar='PATH',
+        default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/calibration'),
+        help='directory containing daily database snapshots')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='provide verbose output on progress')
     parser.add_argument('--debug', action='store_true',
