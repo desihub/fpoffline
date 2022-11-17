@@ -1,0 +1,512 @@
+PETAL,DEVICE_ID,FLAG,NOTE,LBL_Status
+2,M03120,NO_FIBER,Became Dim after installation,Fiber OK at LBL
+2,M04283,NO_FIBER,Sky fiber,Sky fiber
+2,M05607,NO_FIBER,Sky fiber,Sky fiber
+2,M06489,DISABLE,Disconnected,Disconnected at LBL
+9,M05070,NO_FIBER,Sky fiber,Sky fiber
+9,M07601,NO_FIBER,Sky fiber,Sky fiber
+9,M07416,DISABLE,Disconnected,Disconnected at LBL
+9,M07763,DISABLE,Disconnected,Disconnected at LBL
+0,M06783,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+0,M04529,NO_FIBER,Sky fiber,Sky fiber
+0,M02956,NO_FIBER,Sky fiber,Sky fiber
+0,M07369,DISABLE,Disconnected,Disconnected at LBL
+0,M07500,DISABLE,Disconnected,Disconnected at LBL
+1,M04133,NO_FIBER,Sky fiber,Sky fiber
+1,M03156,NO_FIBER,Sky fiber,Sky fiber
+5,M01727,NO_FIBER,Sky fiber,Sky fiber
+5,M06217,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+5,M07163,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+5,M07373,DISABLE,Disconnected,Disconnected at LBL
+5,M02905,DISABLE,Disconnected,Disconnected at LBL
+3,M04478,NO_FIBER,Sky fiber,Sky fiber
+3,M03990,NO_FIBER,Sky fiber,Sky fiber
+3,M03294,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+3,M03757,DISABLE,Disconnected,Disconnected at LBL
+3,M03966,DISABLE,Disconnected,Disconnected at LBL
+3,M04243,DISABLE,Disconnected,Disconnected at LBL
+3,M03972,DISABLE,Disconnected,Disconnected at LBL
+3,M04792,DISABLE,Disconnected,Disconnected at LBL
+3,M05018,DISABLE,Disconnected,Disconnected at LBL
+3,M04744,DISABLE,Disconnected,Disconnected at LBL
+3,M04588,DISABLE,Disconnected,Disconnected at LBL
+3,M04316,DISABLE,Disconnected,Disconnected at LBL
+3,M05439,DISABLE,Disconnected,Disconnected at LBL
+3,M04138,DISABLE,Disconnected,Disconnected at LBL
+3,M02809,DISABLE,Disconnected,Disconnected at LBL
+3,M03454,DISABLE,Disconnected,Disconnected at LBL
+8,M04556,NO_FIBER,No Fiber seen after installation,Fiber OK at LBL
+8,M05038,NO_FIBER,Became Dim after installation,Fiber OK at LBL
+8,M04412,NO_FIBER,Became Dim after installation,Fiber OK at LBL
+8,M02732,NO_FIBER,Sky fiber,Sky fiber
+8,M04583,NO_FIBER,Sky fiber,Sky fiber
+8,M02480,DISABLE,Disconnected,Disconnected at LBL
+8,M02060,DISABLE,Disconnected,Disconnected at LBL
+8,M04585,DISABLE,Disconnected,Disconnected at LBL
+8,M02065,DISABLE,Disconnected,Disconnected at LBL
+8,M02433,DISABLE,Disconnected,Disconnected at LBL
+8,M01719,DISABLE,Disconnected,Disconnected at LBL
+8,M02547,DISABLE,Disconnected,Disconnected at LBL
+8,M05478,DISABLE,Disconnected,Disconnected at LBL
+8,M05472,DISABLE,Disconnected,Disconnected at LBL
+4,M01190,NO_FIBER,"Sky fiber, BROKEN",Sky fiber
+4,M02792,NO_FIBER,"Sky fiber, BROKEN",Sky fiber
+4,M05152,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+4,M03493,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+4,M03599,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+4,M03596,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+4,M05115,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+4,M02351,DISABLE,Disconnected,Disconnected at LBL
+4,M02668,DISABLE,Disconnected,Disconnected at LBL
+6,M06009,NO_FIBER,"Sky fiber, BROKEN",Sky fiber
+6,M03767,NO_FIBER,Sky fiber,Sky fiber
+6,M05638,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+6,M06847,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+7,M02673,NO_FIBER,Became Dim after installation,Fiber OK at LBL
+7,M03943,NO_FIBER,Sky fiber,Sky fiber
+7,M03159,NO_FIBER,Sky fiber,Sky fiber
+7,M03554,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+7,M04217,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+7,M03837,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+7,M02582,NO_FIBER,Broken Fiber,Fiber Broken at LBL
+7,M03802,DISABLE,Disconnected,Disconnected at LBL
+0,M03622,DISABLE,Failed Calib,OK at LBL
+0,M04515,DISABLE,Failed Calib,OK at LBL
+0,M05797,DISABLE,Failed Calib,OK at LBL
+0,M05872,DISABLE,Failed Calib,OK at LBL
+0,M06666,DISABLE,Failed Calib,OK at LBL
+0,M06764,DISABLE,Failed Calib,OK at LBL
+0,M08015,DISABLE,Failed Calib,OK at LBL
+0,M08097,DISABLE,Failed Calib,OK at LBL
+0,M06786,DISABLE,Failed Calib,OK at LBL
+0,M03090,DISABLE,Failed Calib,Failed at LBL
+0,M04343,DISABLE,Failed Calib,OK at LBL
+0,M05888,DISABLE,Failed Calib,OK at LBL
+0,M07499,DISABLE,Failed Calib,OK at LBL
+0,M05928,DISABLE,Failed Calib,OK at LBL
+0,M05977,DISABLE,Failed Calib,OK at LBL
+0,M05982,DISABLE,Failed Calib,OK at LBL
+0,M06683,DISABLE,Failed Calib,OK at LBL
+0,M07364,DISABLE,Failed Calib,Failed at LBL
+0,M07525,DISABLE,Failed Calib,Failed at LBL
+0,M03848,DISABLE,Failed Calib,Failed at LBL
+0,M04062,DISABLE,Failed Calib,OK at LBL
+0,M05218,DISABLE,Failed Calib,OK at LBL
+0,M05703,DISABLE,Failed Calib,OK at LBL
+0,M05862,DISABLE,Failed Calib,Failed at LBL
+0,M06167,DISABLE,Failed Calib,OK at LBL
+0,M04385,DISABLE,Failed XYTest,OK at LBL
+0,M04635,DISABLE,Failed XYTest,OK at LBL
+0,M05252,DISABLE,Failed XYTest,OK at LBL
+0,M05814,DISABLE,Failed XYTest,OK at LBL
+0,M05923,DISABLE,Failed XYTest,OK at LBL
+0,M06080,DISABLE,Failed XYTest,OK at LBL
+0,M06780,DISABLE,Failed XYTest,OK at LBL
+2,M01282,DISABLE,Failed Calib,Failed at LBL
+2,M02440,DISABLE,Failed Calib,Failed at LBL
+2,M02449,DISABLE,Failed Calib,OK at LBL
+2,M02499,DISABLE,Failed Calib,OK at LBL
+2,M03037,DISABLE,Failed Calib,Failed at LBL
+2,M03067,DISABLE,Failed Calib,OK at LBL
+2,M03151,DISABLE,Failed Calib,OK at LBL
+2,M03416,DISABLE,Failed Calib,OK at LBL
+2,M04606,DISABLE,Failed Calib,OK at LBL
+2,M04717,DISABLE,Failed Calib,OK at LBL
+2,M05612,DISABLE,Failed Calib,Failed at LBL
+2,M05836,DISABLE,Failed Calib,Failed at LBL
+2,M05952,DISABLE,Failed Calib,OK at LBL
+2,M05961,DISABLE,Failed Calib,Failed at LBL
+2,M05967,DISABLE,Failed Calib,OK at LBL
+2,M05970,DISABLE,Failed Calib,Failed at LBL
+2,M06812,DISABLE,Failed Calib,Failed at LBL
+2,M07127,DISABLE,Failed Calib,Failed at LBL
+2,M07229,DISABLE,Failed Calib,OK at LBL
+2,M05675,DISABLE,Failed Calib,OK at LBL
+2,M06345,DISABLE,Failed Calib,Failed at LBL
+2,M02762,DISABLE,Failed XYTest,OK at LBL
+2,M04607,DISABLE,Failed XYTest,OK at LBL
+2,M05615,DISABLE,Failed XYTest,OK at LBL
+2,M06278,DISABLE,Failed XYTest,OK at LBL
+2,M07129,DISABLE,Failed XYTest,OK at LBL
+9,M01484,DISABLE,Failed Calib,OK at LBL
+9,M01677,DISABLE,Failed Calib,OK at LBL
+9,M01709,DISABLE,Failed Calib,OK at LBL
+9,M01758,DISABLE,Failed Calib,OK at LBL
+9,M01759,DISABLE,Failed Calib,OK at LBL
+9,M01778,DISABLE,Failed Calib,OK at LBL
+9,M01786,DISABLE,Failed Calib,OK at LBL
+9,M01896,DISABLE,Failed Calib,OK at LBL
+9,M01946,DISABLE,Failed Calib,OK at LBL
+9,M02254,DISABLE,Failed Calib,Failed at LBL
+9,M02482,DISABLE,Failed Calib,OK at LBL
+9,M02525,DISABLE,Failed Calib,OK at LBL
+9,M04083,DISABLE,Failed Calib,Failed at LBL
+9,M04396,DISABLE,Failed Calib,Failed at LBL
+9,M06898,DISABLE,Failed Calib,OK at LBL
+9,M07271,DISABLE,Failed Calib,OK at LBL
+9,M07591,DISABLE,Failed Calib,Failed at LBL
+9,M07651,DISABLE,Failed Calib,OK at LBL
+9,M07656,DISABLE,Failed Calib,OK at LBL
+9,M07688,DISABLE,Failed Calib,OK at LBL
+9,M07695,DISABLE,Failed Calib,OK at LBL
+9,M07747,DISABLE,Failed Calib,OK at LBL
+9,M07862,DISABLE,Failed Calib,OK at LBL
+9,M07863,DISABLE,Failed Calib,OK at LBL
+9,M02427,DISABLE,Failed XYTest,OK at LBL
+9,M07710,DISABLE,Failed XYTest,OK at LBL
+9,M07913,DISABLE,Failed XYTest,OK at LBL
+7,M01865,DISABLE,Failed Calib,Failed at LBL
+7,M01875,DISABLE,Failed Calib,OK at LBL
+7,M02164,DISABLE,Failed Calib,OK at LBL
+7,M02673,DISABLE,Failed Calib,Fiber OK at LBL
+7,M02731,DISABLE,Failed Calib,OK at LBL
+7,M02915,DISABLE,Failed Calib,OK at LBL
+7,M03020,DISABLE,Failed Calib,OK at LBL
+7,M03024,DISABLE,Failed Calib,OK at LBL
+7,M03026,DISABLE,Failed Calib,OK at LBL
+7,M03061,DISABLE,Failed Calib,OK at LBL
+7,M03103,DISABLE,Failed Calib,OK at LBL
+7,M03108,DISABLE,Failed Calib,OK at LBL
+7,M03199,DISABLE,Failed Calib,OK at LBL
+7,M03250,DISABLE,Failed Calib,OK at LBL
+7,M03319,DISABLE,Failed Calib,Failed at LBL
+7,M03322,DISABLE,Failed Calib,Failed at LBL
+7,M03327,DISABLE,Failed Calib,OK at LBL
+7,M03334,DISABLE,Failed Calib,OK at LBL
+7,M03418,DISABLE,Failed Calib,OK at LBL
+7,M03427,DISABLE,Failed Calib,OK at LBL
+7,M03452,DISABLE,Failed Calib,OK at LBL
+7,M03455,DISABLE,Failed Calib,Failed at LBL
+7,M03508,DISABLE,Failed Calib,OK at LBL
+7,M03510,DISABLE,Failed Calib,OK at LBL
+7,M03545,DISABLE,Failed Calib,OK at LBL
+7,M03556,DISABLE,Failed Calib,OK at LBL
+7,M03567,DISABLE,Failed Calib,OK at LBL
+7,M03587,DISABLE,Failed Calib,OK at LBL
+7,M03601,DISABLE,Failed Calib,OK at LBL
+7,M03607,DISABLE,Failed Calib,OK at LBL
+7,M03609,DISABLE,Failed Calib,OK at LBL
+7,M03630,DISABLE,Failed Calib,Failed at LBL
+7,M03633,DISABLE,Failed Calib,OK at LBL
+7,M03642,DISABLE,Failed Calib,OK at LBL
+7,M03645,DISABLE,Failed Calib,OK at LBL
+7,M03649,DISABLE,Failed Calib,OK at LBL
+7,M03650,DISABLE,Failed Calib,OK at LBL
+7,M03653,DISABLE,Failed Calib,OK at LBL
+7,M03654,DISABLE,Failed Calib,OK at LBL
+7,M03655,DISABLE,Failed Calib,OK at LBL
+7,M03661,DISABLE,Failed Calib,OK at LBL
+7,M03680,DISABLE,Failed Calib,OK at LBL
+7,M03684,DISABLE,Failed Calib,OK at LBL
+7,M03688,DISABLE,Failed Calib,OK at LBL
+7,M03696,DISABLE,Failed Calib,OK at LBL
+7,M03712,DISABLE,Failed Calib,OK at LBL
+7,M03721,DISABLE,Failed Calib,OK at LBL
+7,M03735,DISABLE,Failed Calib,OK at LBL
+7,M03756,DISABLE,Failed Calib,OK at LBL
+7,M03809,DISABLE,Failed Calib,OK at LBL
+7,M03871,DISABLE,Failed Calib,Failed at LBL
+7,M03889,DISABLE,Failed Calib,Failed at LBL
+7,M03913,DISABLE,Failed Calib,OK at LBL
+7,M03918,DISABLE,Failed Calib,OK at LBL
+7,M03935,DISABLE,Failed Calib,OK at LBL
+7,M03940,DISABLE,Failed Calib,Failed at LBL
+7,M03941,DISABLE,Failed Calib,OK at LBL
+7,M03945,DISABLE,Failed Calib,OK at LBL
+7,M03979,DISABLE,Failed Calib,Failed at LBL
+7,M03981,DISABLE,Failed Calib,Failed at LBL
+7,M03983,DISABLE,Failed Calib,OK at LBL
+7,M03986,DISABLE,Failed Calib,Failed at LBL
+7,M04024,DISABLE,Failed Calib,Failed at LBL
+7,M04110,DISABLE,Failed Calib,OK at LBL
+7,M04213,DISABLE,Failed Calib,Failed at LBL
+7,M04712,DISABLE,Failed Calib,Failed at LBL
+7,M04722,DISABLE,Failed Calib,Failed at LBL
+7,M04843,DISABLE,Failed Calib,OK at LBL
+7,M04849,DISABLE,Failed Calib,OK at LBL
+7,M05086,DISABLE,Failed Calib,OK at LBL
+7,M02677,DISABLE,Failed XYTest,OK at LBL
+7,M03085,DISABLE,Failed XYTest,OK at LBL
+7,M03163,DISABLE,Failed XYTest,OK at LBL
+7,M03242,DISABLE,Failed XYTest,OK at LBL
+7,M03285,DISABLE,Failed XYTest,OK at LBL
+7,M03289,DISABLE,Failed XYTest,OK at LBL
+7,M03456,DISABLE,Failed XYTest,OK at LBL
+7,M03514,DISABLE,Failed XYTest,Failed at LBL
+7,M03528,DISABLE,Failed XYTest,OK at LBL
+7,M03566,DISABLE,Failed XYTest,OK at LBL
+4,M01468,DISABLE,Failed Calib,OK at LBL
+4,M01722,DISABLE,Failed Calib,OK at LBL
+4,M02318,DISABLE,Failed Calib,OK at LBL
+4,M02500,DISABLE,Failed Calib,Failed at LBL
+4,M02505,DISABLE,Failed Calib,OK at LBL
+4,M02725,DISABLE,Failed Calib,OK at LBL
+4,M02734,DISABLE,Failed Calib,OK at LBL
+4,M02947,DISABLE,Failed Calib,Failed at LBL
+4,M03008,DISABLE,Failed Calib,OK at LBL
+4,M03009,DISABLE,Failed Calib,OK at LBL
+4,M03086,DISABLE,Failed Calib,Failed at LBL
+4,M03099,DISABLE,Failed Calib,OK at LBL
+4,M03133,DISABLE,Failed Calib,OK at LBL
+4,M03217,DISABLE,Failed Calib,OK at LBL
+4,M03219,DISABLE,Failed Calib,OK at LBL
+4,M03268,DISABLE,Failed Calib,Failed at LBL
+4,M03405,DISABLE,Failed Calib,OK at LBL
+4,M03461,DISABLE,Failed Calib,OK at LBL
+4,M03588,DISABLE,Failed Calib,OK at LBL
+4,M03672,DISABLE,Failed Calib,OK at LBL
+4,M03709,DISABLE,Failed Calib,OK at LBL
+4,M03710,DISABLE,Failed Calib,OK at LBL
+4,M03794,DISABLE,Failed Calib,OK at LBL
+4,M03816,DISABLE,Failed Calib,Failed at LBL
+4,M03906,DISABLE,Failed Calib,Failed at LBL
+4,M03947,DISABLE,Failed Calib,OK at LBL
+4,M03978,DISABLE,Failed Calib,Failed at LBL
+4,M03995,DISABLE,Failed Calib,OK at LBL
+4,M04086,DISABLE,Failed Calib,OK at LBL
+4,M04178,DISABLE,Failed Calib,OK at LBL
+4,M04182,DISABLE,Failed Calib,OK at LBL
+4,M04361,DISABLE,Failed Calib,Failed at LBL
+4,M04363,DISABLE,Failed Calib,OK at LBL
+4,M04386,DISABLE,Failed Calib,OK at LBL
+4,M04547,DISABLE,Failed Calib,OK at LBL
+4,M04761,DISABLE,Failed Calib,OK at LBL
+4,M04763,DISABLE,Failed Calib,OK at LBL
+4,M04775,DISABLE,Failed Calib,Failed at LBL
+4,M04982,DISABLE,Failed Calib,OK at LBL
+4,M05042,DISABLE,Failed Calib,OK at LBL
+4,M05107,DISABLE,Failed Calib,Failed at LBL
+4,M05132,DISABLE,Failed Calib,OK at LBL
+4,M05499,DISABLE,Failed Calib,OK at LBL
+4,M05322,DISABLE,Failed XYTest,OK at LBL
+8,M01764,DISABLE,Failed Calib,OK at LBL
+8,M01834,DISABLE,Failed Calib,OK at LBL
+8,M01953,DISABLE,Failed Calib,OK at LBL
+8,M02369,DISABLE,Failed Calib,OK at LBL
+8,M02453,DISABLE,Failed Calib,OK at LBL
+8,M02733,DISABLE,Failed Calib,OK at LBL
+8,M03073,DISABLE,Failed Calib,OK at LBL
+8,M03137,DISABLE,Failed Calib,OK at LBL
+8,M03321,DISABLE,Failed Calib,OK at LBL
+8,M03348,DISABLE,Failed Calib,OK at LBL
+8,M04253,DISABLE,Failed Calib,OK at LBL
+8,M05096,DISABLE,Failed Calib,OK at LBL
+8,M05112,DISABLE,Failed Calib,OK at LBL
+8,M05114,DISABLE,Failed Calib,OK at LBL
+8,M05453,DISABLE,Failed Calib,OK at LBL
+8,M05471,DISABLE,Failed Calib,OK at LBL
+8,M05506,DISABLE,Failed Calib,OK at LBL
+8,M05508,DISABLE,Failed Calib,OK at LBL
+8,M05363,DISABLE,Failed Calib,OK at LBL
+8,M04910,DISABLE,Failed Calib,OK at LBL
+8,M02257,DISABLE,Failed Calib,OK at LBL
+8,M02392,DISABLE,Failed Calib,OK at LBL
+8,M04569,DISABLE,Failed Calib,OK at LBL
+8,M03520,DISABLE,Failed Calib,OK at LBL
+8,M02430,DISABLE,Failed Calib,Failed at LBL
+8,M02824,DISABLE,Failed Calib,OK at LBL
+8,M02913,DISABLE,Failed Calib,OK at LBL
+8,M02939,DISABLE,Failed Calib,OK at LBL
+8,M03256,DISABLE,Failed Calib,Failed at LBL
+8,M03356,DISABLE,Failed Calib,Failed at LBL
+8,M03409,DISABLE,Failed Calib,OK at LBL
+8,M05461,DISABLE,Failed Calib,OK at LBL
+8,M05178,DISABLE,Failed Calib,Failed at LBL
+8,M04569,DISABLE,Failed Calib,OK at LBL
+8,M02871,DISABLE,Failed XYTest,OK at LBL
+8,M03119,DISABLE,Failed XYTest,OK at LBL
+8,M04376,DISABLE,Failed XYTest,OK at LBL
+6,M08474,DISABLE,Failed Calib,Failed at LBL
+6,M08269,DISABLE,Failed Calib,OK at LBL
+6,M08208,DISABLE,Failed Calib,OK at LBL
+6,M01080,DISABLE,Failed Calib,Failed at LBL
+6,M01102,DISABLE,Failed Calib,OK at LBL
+6,M01106,DISABLE,Failed Calib,OK at LBL
+6,M01276,DISABLE,Failed Calib,OK at LBL
+6,M01376,DISABLE,Failed Calib,OK at LBL
+6,M01482,DISABLE,Failed Calib,OK at LBL
+6,M01749,DISABLE,Failed Calib,OK at LBL
+6,M01831,DISABLE,Failed Calib,OK at LBL
+6,M01929,DISABLE,Failed Calib,OK at LBL
+6,M02721,DISABLE,Failed Calib,OK at LBL
+6,M03415,DISABLE,Failed Calib,OK at LBL
+6,M04619,DISABLE,Failed Calib,OK at LBL
+6,M06663,DISABLE,Failed Calib,Failed at LBL
+6,M07427,DISABLE,Failed Calib,Failed at LBL
+6,M07873,DISABLE,Failed Calib,OK at LBL
+6,M07888,DISABLE,Failed Calib,OK at LBL
+6,M08083,DISABLE,Failed Calib,OK at LBL
+6,M08141,DISABLE,Failed Calib,OK at LBL
+6,M08221,DISABLE,Failed Calib,Failed at LBL
+6,M08230,DISABLE,Failed Calib,OK at LBL
+6,M08337,DISABLE,Failed Calib,OK at LBL
+6,M00411,DISABLE,Failed XYTest,OK at LBL
+6,M01106,DISABLE,Failed XYTest,OK at LBL
+6,M04563,DISABLE,Failed XYTest,OK at LBL
+6,M01750,DISABLE,Failed XYTest,OK at LBL
+6,M01768,DISABLE,Failed XYTest,OK at LBL
+6,M01887,DISABLE,Failed XYTest,OK at LBL
+6,M01934,DISABLE,Failed XYTest,OK at LBL
+6,M02373,DISABLE,Failed XYTest,OK at LBL
+6,M06090,DISABLE,Failed XYTest,OK at LBL
+6,M02561,DISABLE,Failed XYTest,OK at LBL
+6,M06548,DISABLE,Failed XYTest,OK at LBL
+6,M06601,DISABLE,Failed XYTest,OK at LBL
+6,M06667,DISABLE,Failed XYTest,OK at LBL
+6,M06685,DISABLE,Failed XYTest,OK at LBL
+6,M08299,DISABLE,Failed XYTest,OK at LBL
+3,M04369,DISABLE,Failed Calib,OK at LBL
+3,M04250,DISABLE,Failed Calib,OK at LBL
+3,M03581,DISABLE,Failed Calib,OK at LBL
+3,M04191,DISABLE,Failed Calib,OK at LBL
+3,M04307,DISABLE,Failed Calib,OK at LBL
+3,M04381,DISABLE,Failed Calib,OK at LBL
+3,M05052,DISABLE,Failed Calib,OK at LBL
+3,M05062,DISABLE,Failed Calib,Failed at LBL
+3,M05361,DISABLE,Failed Calib,Failed at LBL
+3,M04980,DISABLE,Failed Calib,OK at LBL
+3,M04596,DISABLE,Failed Calib,OK at LBL
+3,M00436,DISABLE,Failed Calib,OK at LBL
+3,M01632,DISABLE,Failed Calib,OK at LBL
+3,M03961,DISABLE,Failed Calib,OK at LBL
+3,M03962,DISABLE,Failed Calib,OK at LBL
+3,M04060,DISABLE,Failed Calib,OK at LBL
+3,M04354,DISABLE,Failed Calib,OK at LBL
+3,M04379,DISABLE,Failed Calib,OK at LBL
+3,M04389,DISABLE,Failed Calib,OK at LBL
+3,M04507,DISABLE,Failed Calib,OK at LBL
+3,M04595,DISABLE,Failed Calib,Failed at LBL
+3,M04882,DISABLE,Failed Calib,OK at LBL
+3,M04995,DISABLE,Failed Calib,OK at LBL
+3,M05066,DISABLE,Failed Calib,Failed at LBL
+3,M05530,DISABLE,Failed Calib,OK at LBL
+3,M03676,DISABLE,Failed Calib,OK at LBL
+3,M03733,DISABLE,Failed Calib,Failed at LBL
+3,M03777,DISABLE,Failed Calib,Failed at LBL
+3,M03917,DISABLE,Failed Calib,OK at LBL
+3,M04055,DISABLE,Failed Calib,OK at LBL
+3,M04058,DISABLE,Failed Calib,Failed at LBL
+3,M04981,DISABLE,Failed Calib,Failed at LBL
+3,M05376,DISABLE,Failed Calib,OK at LBL
+3,M03075,DISABLE,Failed Calib,OK at LBL
+3,M03187,DISABLE,Failed Calib,OK at LBL
+3,M03191,DISABLE,Failed Calib,OK at LBL
+3,M03444,DISABLE,Failed Calib,OK at LBL
+3,M03469,DISABLE,Failed Calib,OK at LBL
+3,M03583,DISABLE,Failed Calib,OK at LBL
+3,M04081,DISABLE,Failed Calib,OK at LBL
+3,M04235,DISABLE,Failed Calib,Failed at LBL
+3,M04309,DISABLE,Failed Calib,OK at LBL
+3,M04330,DISABLE,Failed Calib,OK at LBL
+3,M05029,DISABLE,Failed Calib,OK at LBL
+3,M05048,DISABLE,Failed Calib,OK at LBL
+3,M05264,DISABLE,Failed Calib,OK at LBL
+3,M05013,DISABLE,Failed Calib,Failed at LBL
+1,M01289,DISABLE,Failed Calib,OK at LBL
+1,M01916,DISABLE,Failed Calib,OK at LBL
+1,M02248,DISABLE,Failed Calib,OK at LBL
+1,M02323,DISABLE,Failed Calib,OK at LBL
+1,M02767,DISABLE,Failed Calib,OK at LBL
+1,M03293,DISABLE,Failed Calib,OK at LBL
+1,M03330,DISABLE,Failed Calib,OK at LBL
+1,M03443,DISABLE,Failed Calib,Failed at LBL
+1,M03476,DISABLE,Failed Calib,OK at LBL
+1,M03491,DISABLE,Failed Calib,OK at LBL
+1,M03530,DISABLE,Failed Calib,OK at LBL
+1,M03538,DISABLE,Failed Calib,OK at LBL
+1,M03675,DISABLE,Failed Calib,OK at LBL
+1,M03703,DISABLE,Failed Calib,OK at LBL
+1,M03729,DISABLE,Failed Calib,OK at LBL
+1,M03734,DISABLE,Failed Calib,Failed at LBL
+1,M03772,DISABLE,Failed Calib,OK at LBL
+1,M03778,DISABLE,Failed Calib,Failed at LBL
+1,M03784,DISABLE,Failed Calib,Failed at LBL
+1,M03792,DISABLE,Failed Calib,OK at LBL
+1,M03811,DISABLE,Failed Calib,OK at LBL
+1,M03873,DISABLE,Failed Calib,Failed at LBL
+1,M03915,DISABLE,Failed Calib,OK at LBL
+1,M03925,DISABLE,Failed Calib,OK at LBL
+1,M03954,DISABLE,Failed Calib,OK at LBL
+1,M03963,DISABLE,Failed Calib,Failed at LBL
+1,M03975,DISABLE,Failed Calib,Failed at LBL
+1,M03987,DISABLE,Failed Calib,OK at LBL
+1,M04012,DISABLE,Failed Calib,OK at LBL
+1,M04013,DISABLE,Failed Calib,OK at LBL
+1,M04031,DISABLE,Failed Calib,OK at LBL
+1,M04044,DISABLE,Failed Calib,OK at LBL
+1,M04052,DISABLE,Failed Calib,OK at LBL
+1,M04084,DISABLE,Failed Calib,OK at LBL
+1,M04197,DISABLE,Failed Calib,OK at LBL
+1,M04199,DISABLE,Failed Calib,OK at LBL
+1,M04201,DISABLE,Failed Calib,OK at LBL
+1,M04205,DISABLE,Failed Calib,Failed at LBL
+1,M04265,DISABLE,Failed Calib,OK at LBL
+1,M04318,DISABLE,Failed Calib,OK at LBL
+1,M04319,DISABLE,Failed Calib,OK at LBL
+1,M04337,DISABLE,Failed Calib,Failed at LBL
+1,M04373,DISABLE,Failed Calib,Failed at LBL
+1,M04416,DISABLE,Failed Calib,Failed at LBL
+1,M04422,DISABLE,Failed Calib,OK at LBL
+1,M04711,DISABLE,Failed Calib,Failed at LBL
+1,M04834,DISABLE,Failed Calib,OK at LBL
+1,M04984,DISABLE,Failed Calib,OK at LBL
+1,M05000,DISABLE,Failed Calib,Failed at LBL
+1,M05074,DISABLE,Failed Calib,Failed at LBL
+1,M05084,DISABLE,Failed Calib,OK at LBL
+1,M05089,DISABLE,Failed Calib,OK at LBL
+1,M05262,DISABLE,Failed Calib,OK at LBL
+1,M05268,DISABLE,Failed Calib,Failed at LBL
+1,M05398,DISABLE,Failed Calib,OK at LBL
+1,M03290,DISABLE,Failed XYTest,OK at LBL
+5,M00469,DISABLE,Failed Calib,OK at LBL
+5,M01497,DISABLE,Failed Calib,OK at LBL
+5,M01686,DISABLE,Failed Calib,Failed at LBL
+5,M01976,DISABLE,Failed Calib,OK at LBL
+5,M02361,DISABLE,Failed Calib,Failed at LBL
+5,M02481,DISABLE,Failed Calib,Failed at LBL
+5,M03003,DISABLE,Failed Calib,OK at LBL
+5,M03126,DISABLE,Failed Calib,OK at LBL
+5,M03379,DISABLE,Failed Calib,OK at LBL
+5,M03558,DISABLE,Failed Calib,OK at LBL
+5,M03614,DISABLE,Failed Calib,OK at LBL
+5,M03639,DISABLE,Failed Calib,OK at LBL
+5,M04271,DISABLE,Failed Calib,OK at LBL
+5,M04401,DISABLE,Failed Calib,OK at LBL
+5,M06863,DISABLE,Failed Calib,OK at LBL
+5,M06874,DISABLE,Failed Calib,OK at LBL
+5,M06931,DISABLE,Failed Calib,Failed at LBL
+5,M06933,DISABLE,Failed Calib,OK at LBL
+5,M07081,DISABLE,Failed Calib,OK at LBL
+5,M07085,DISABLE,Failed Calib,OK at LBL
+5,M07119,DISABLE,Failed Calib,OK at LBL
+5,M07125,DISABLE,Failed Calib,OK at LBL
+5,M07241,DISABLE,Failed Calib,OK at LBL
+5,M07274,DISABLE,Failed Calib,OK at LBL
+5,M07338,DISABLE,Failed Calib,OK at LBL
+5,M07383,DISABLE,Failed Calib,OK at LBL
+5,M07638,DISABLE,Failed Calib,Failed at LBL
+5,M07757,DISABLE,Failed Calib,OK at LBL
+5,M07504,DISABLE,Failed Calib,OK at LBL
+5,M01725,DISABLE,Failed Calib,Failed at LBL
+5,M02720,DISABLE,Failed XYTest,OK at LBL
+5,M03254,DISABLE,Failed XYTest,OK at LBL
+5,M06757,DISABLE,Failed XYTest,OK at LBL
+5,M06891,DISABLE,Failed XYTest,OK at LBL
+5,M06986,DISABLE,Failed XYTest,Failed at LBL
+5,M07238,DISABLE,Failed XYTest,OK at LBL
+5,M07358,DISABLE,Failed XYTest,OK at LBL
+5,M07466,DISABLE,Failed XYTest,OK at LBL
+5,M05629,DISABLE,Failed XYTest,OK at LBL
+5,M01228,DISABLE,Failed XYTest,OK at LBL
+5,M01257,DISABLE,Failed XYTest,OK at LBL
+5,M01496,DISABLE,Failed XYTest,OK at LBL
+7,M03698,None,Not disabled now,Failed at LBL
+7,M04215,None,Not disabled now,Failed at LBL
+2,M03223,None,Not disabled now,Failed at LBL
+2,M06220,None,Not disabled now,Failed at LBL
+2,M06867,None,Not disabled now,Failed at LBL
+4,M04749,None,Not disabled now,Failed at LBL
+4,M01894,None,Not disabled now,Failed at LBL
+3,M03519,None,Not disabled now,Failed at LBL
+3,M04601,None,Not disabled now,Failed at LBL
+3,M04530,None,Not disabled now,Failed at LBL
