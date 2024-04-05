@@ -100,7 +100,7 @@ def run(args):
     summary['R0_OVER_S0'] = r0 / s0
 
     # Initialize online database access.
-    DB = fpoffline.db.DB()
+    DB = fpoffline.db.DB(config_name=args.db_config, http_fallback=False)
 
     # Look up the exposures taken on this night.
     # Not all exposures have night set (e.g. the FP setup) so we
@@ -806,6 +806,8 @@ def main():
     parser.add_argument('--snap-dir', type=pathlib.Path, metavar='PATH',
         default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/calibration'),
         help='directory containing daily database snapshots')
+    parser.add_argument('--db-config', type=str, metavar='YAML',
+        default=None, help='path of yaml file containing database connection parameters to use')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='provide verbose output on progress')
     parser.add_argument('--debug', action='store_true',
