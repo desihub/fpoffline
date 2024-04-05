@@ -85,7 +85,7 @@ def run(args):
 
     # Add indexing info. The left join will drop 5 fidicuals that are missing metrology:
     # P074, P030, P029, P123, P058.
-    I = fpoffline.io.get_index(args.night)
+    I = fpoffline.io.get_index(args.night, path=args.index_dir)
     logging.info(f'Using index {I.meta["index_name"]}')
     I['LOCATION'] = 1000 * I['PETAL_LOC'] + I['DEVICE_LOC']
     summary = astropy.table.join(summary, I, keys='LOCATION', join_type='left')
@@ -806,6 +806,9 @@ def main():
     parser.add_argument('--snap-dir', type=pathlib.Path, metavar='PATH',
         default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/calibration'),
         help='directory containing daily database snapshots')
+    parser.add_argument('--index-dir', type=pathlib.Path, metavar='PATH',
+        default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/PositionerIndexTable/index_files'),
+        help='directory containing positioner index tables')
     parser.add_argument('--db-config', type=str, metavar='YAML',
         default=None, help='path of yaml file containing database connection parameters to use')
     parser.add_argument('-v', '--verbose', action='store_true',
