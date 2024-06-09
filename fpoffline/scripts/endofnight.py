@@ -810,7 +810,8 @@ def main():
         default=pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane/PositionerIndexTable/index_files'),
         help='directory containing positioner index tables')
     parser.add_argument('--db-config', type=str, metavar='YAML',
-        default=None, help='path of yaml file containing database connection parameters to use')
+        default='/global/cfs/cdirs/desi/engineering/focalplane/db.yaml',
+        help='path of yaml file containing database connection parameters to use')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='provide verbose output on progress')
     parser.add_argument('--debug', action='store_true',
