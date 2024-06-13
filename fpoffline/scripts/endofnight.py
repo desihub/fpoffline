@@ -97,7 +97,7 @@ def run(args):
     # Compute interpolated constants to transform from flatXY to ptlXY.
     s0 = np.hypot(summary['OFFSET_X'], summary['OFFSET_Y'])
     r0 = desimeter.transform.xy2qs.s2r(s0)
-    summary['R0_OVER_S0'] = r0 / s0
+    summary['R0_OVER_S0'] = np.round(r0 / s0, 6)
 
     # Initialize online database access.
     DB = fpoffline.db.DB(config_name=args.db_config, http_fallback=False)
@@ -250,23 +250,25 @@ def run(args):
                 tx.fit(spots, metrology, update_spots=False, zbfit=True)
                 # Record per-location info of all fidicials and positioners.
                 fp = np.stack((summary['X_FP'], summary['Y_FP']))
-                fvc = np.stack(tx.fp2fvc(fp[0], fp[1]))
+                fvc = np.round(np.stack(tx.fp2fvc(fp[0], fp[1])), 3)
                 # Save X_FVC,Y_FVC measured from top-left corner.
                 fvc_img_size = 6000
                 summary['X_FVC'], summary['Y_FVC'] = fvc_img_size - fvc
                 # Calculate a local linear transformation from FP coords to FVC pixels.
                 dfvc_dx = np.stack(tx.fp2fvc(fp[0] + 0.5, fp[1])) - np.stack(tx.fp2fvc(fp[0] - 0.5, fp[1]))
                 dfvc_dy = np.stack(tx.fp2fvc(fp[0], fp[1] + 0.5)) - np.stack(tx.fp2fvc(fp[0], fp[1] - 0.5))
-                summary['DXFVC_DXFP'], summary['DYFVC_DXFP'] = -dfvc_dx
-                summary['DXFVC_DYFP'], summary['DYFVC_DYFP'] = -dfvc_dy
+                summary['DXFVC_DXFP'], summary['DYFVC_DXFP'] = -np.round(dfvc_dx, 6)
+                summary['DXFVC_DYFP'], summary['DYFVC_DYFP'] = -np.round(dfvc_dy, 6)
                 # Transform GFA, PTL keepouts from FP to FVC.
+                fvcout = lambda xy: np.round(fvc_img_size - xy, 3).tolist()
                 for petal_loc in range(10):
                     xfp, yfp = summary.meta['keepout']['gfa'][petal_loc]
                     xfvc, yfvc = tx.fp2fvc(np.array(xfp), np.array(yfp))
-                    summary.meta['keepout']['gfa'][petal_loc] = [(6000-xfvc).tolist(), (6000-yfvc).tolist()]
+                    #summary.meta['keepout']['gfa'][petal_loc] = [(6000-xfvc).tolist(), (6000-yfvc).tolist()]
+                    summary.meta['keepout']['gfa'][petal_loc] = [fvcout(xfvc), fvcout(yfvc)]
                     xfp, yfp = summary.meta['keepout']['ptl'][petal_loc]
                     xfvc, yfvc = tx.fp2fvc(np.array(xfp), np.array(yfp))
-                    summary.meta['keepout']['ptl'][petal_loc] = [(6000-xfvc).tolist(), (6000-yfvc).tolist()]
+                    summary.meta['keepout']['ptl'][petal_loc] = [fvcout(xfvc), fvcout(yfvc)]
             except Exception as e:
                 logging.warning(f'Failed to fit spots in expid {args.back_id}:\n{e}')
                 if args.traceback:
@@ -483,8 +485,8 @@ def run(args):
         summary['OFFSET_X'][valid], summary['OFFSET_Y'][valid])
     summary['PRED_X'] = np.nan
     summary['PRED_Y'] = np.nan
-    summary['PRED_X'][valid], summary['PRED_Y'][valid] = ptl2fp_nominal(
-        x_ptl, y_ptl, summary['PETAL_LOC'][valid])
+    summary['PRED_X'][valid], summary['PRED_Y'][valid] = np.round(ptl2fp_nominal(
+        x_ptl, y_ptl, summary['PETAL_LOC'][valid]), 6)
 
     # Get and save latest flags for each location.
     last_flags = moves[moves.mflags!=0].groupby('location').last()
