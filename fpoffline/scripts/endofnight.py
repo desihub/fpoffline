@@ -257,8 +257,8 @@ def run(args):
                 # Calculate a local linear transformation from FP coords to FVC pixels.
                 dfvc_dx = np.stack(tx.fp2fvc(fp[0] + 0.5, fp[1])) - np.stack(tx.fp2fvc(fp[0] - 0.5, fp[1]))
                 dfvc_dy = np.stack(tx.fp2fvc(fp[0], fp[1] + 0.5)) - np.stack(tx.fp2fvc(fp[0], fp[1] - 0.5))
-                summary['DXFVC_DXFP'], summary['DYFVC_DXFP'] = -np.round(dfvc_dx, 6)
-                summary['DXFVC_DYFP'], summary['DYFVC_DYFP'] = -np.round(dfvc_dy, 6)
+                summary['DXFVC_DXFP'], summary['DYFVC_DXFP'] = -np.round(dfvc_dx, 5)
+                summary['DXFVC_DYFP'], summary['DYFVC_DYFP'] = -np.round(dfvc_dy, 5)
                 # Transform GFA, PTL keepouts from FP to FVC.
                 fvcout = lambda xy: np.round(fvc_img_size - xy, 3).tolist()
                 for petal_loc in range(10):
