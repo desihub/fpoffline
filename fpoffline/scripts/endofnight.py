@@ -285,6 +285,22 @@ def run(args):
     summary.meta['moves_start'] = str(moves_start)
     summary.meta['end_time'] = str(end_time)
 
+    # Get the latest calib for each robot, at the time of the snapshot.
+    # This could potentially replace the snapshot in future...
+    full_calib = get_calib(DB, calib_start, args.verbose)
+
+    # Look for linear phi motors and record their scales in the summary.
+    linphi = full_calib.zeno_motor_p == True
+    logging.info(f'Found {np.count_nonzero(linphi)} linear phi robots.')
+    linphi_locs = full_calib[linphi].index
+    summary['LINPHI'] = False
+    summary['LINPHI_CW'] = 0.0
+    summary['LINPHI_CCW'] = 0.0
+    idx = np.searchsorted(summary['LOCATION'], linphi_locs)
+    summary['LINPHI'][idx] = True
+    summary['LINPHI_CW'][idx] = full_calib.loc[linphi, 'sz_cw_p']
+    summary['LINPHI_CCW'][idx] = full_calib.loc[linphi, 'sz_ccw_p']
+
     # Look for any calib updates since the snapshot.
     calib_csv = output / f'calib-{args.night}.csv'
     if args.overwrite or not calib_csv.exists():
@@ -550,6 +566,11 @@ def run(args):
     bit7 = np.isin(summary['DEVICE_ID'], bad_phi)
     summary['INSPECT'][bit7] |= (1<<7)
     groups.append('bad-P: suspected bad phi motor')
+    # bit 8 is linear phi
+    bit8 = np.isin(summary['LOCATION'], linphi_locs)
+    summary['INSPECT'][bit8] |= (1<<8)
+    groups.append('linphi: robot has linear phi motor')
+
     # Print a summary.
     for bit, description in enumerate(groups):
         nbit = np.count_nonzero(summary['INSPECT'] & (1 << bit) != 0)
@@ -776,6 +797,43 @@ def ptl2fp_nominal(x_ptl, y_ptl, petal_locs):
         x_fp[sel] = x_ptl[sel] * C - y_ptl[sel] * S
         y_fp[sel] = x_ptl[sel] * S + y_ptl[sel] * C
     return x_fp, y_fp
+
+
+def get_calib(DB, at=None, verbose=True):
+    """Fetch the latest calibration for each robot and return as a pandas dataframe
+    indexed by location.
+
+    Parameters
+    ----------
+    DB : fpoffline.db.DB
+        Database connection to use.
+    at : datetime-like
+        A value that pd.Timestamp can interpet to specify when the calibration data should be valid.
+    verbose : bool
+        Print a one-line summary for each petal when True.
+    """
+    tables = [ ]
+    before = '' if at is None else f" where time_recorded<=TIMESTAMP '{pd.Timestamp(at)}'"
+    for petal_loc, petal_id in enumerate(fpoffline.const.PETAL_ID_MAP):
+        tname = f'posmovedb.positioner_calibration_p{petal_id}'
+        sql = f'''select * from {tname}
+            where (pos_id,time_recorded) in
+            (
+                select pos_id,max(time_recorded)
+                from {tname}{before}
+                group by pos_id
+            )'''
+        table = DB.query(sql, maxrows=1000, dates=['time_recorded'])
+        if verbose:
+            print(f'Loaded {len(table)} calib rows for petal_id {petal_id}')
+        table['location'] = 1000*petal_loc + table['device_loc']
+        tables.append(table)
+    calib = pd.concat(tables, axis='index', ignore_index=True)
+    calib.set_index('location', inplace=True)
+    if len(calib) == 0:
+        print('No calib found.')
+        return None
+    return calib
 
 
 def main():
