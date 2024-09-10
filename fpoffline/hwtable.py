@@ -12,7 +12,7 @@ import desimeter.transform.pos2ptl
 import desimeter.transform.ptl2fp
 
 
-def load_hwtable(expid, petal_id=None, exp_iter=None, path=None, verbose=False):
+def load_hwtable(expid, petal_id=None, exp_iter=None, path=None, verbose=False, compress=True):
     """Load the positioner hardware move table(s) for the specified exposure.
 
     Parameters
@@ -30,6 +30,10 @@ def load_hwtable(expid, petal_id=None, exp_iter=None, path=None, verbose=False):
         and either the NERSC_HOST or DOS_HOME env var is set.
     verbose : bool
         Print information about progress
+    compress : bool
+        Remove redundant columns and compress string columns by removing spaces
+        and replacing 'creep' and 'cruise' with 0 and 1, respectively,
+        in the speed_mode_T/P columns.
 
     Returns
     -------
@@ -93,8 +97,17 @@ def load_hwtable(expid, petal_id=None, exp_iter=None, path=None, verbose=False):
         df['exp_iter'] = exp_iters[i]
         dfs.append(df)
     # Combine all CSVs.
-    return pd.concat(dfs, ignore_index=True)
-
+    df = pd.concat(dfs, ignore_index=True)
+    # Sort by increasing exp_iter
+    df.sort_values('exp_iter', inplace=True, ignore_index=True)
+    if compress:
+        # Apply optional compression steps
+        df = df.drop(columns=['busid','canid','petal_id','move_time','total_time','required','failed_to_send'])
+        for col in 'motor_steps_P', 'motor_steps_T', 'speed_mode_T', 'speed_mode_P', 'postpause':
+            df[col] = df[col].str.replace(', ', ',')
+        for col in 'speed_mode_T', 'speed_mode_P':
+            df[col] = df[col].str.replace("'creep'", "0").str.replace("'cruise'", "1")
+    return df
 
 class Scheduler:
     """Initialize a new move scheduler for a positioner.
