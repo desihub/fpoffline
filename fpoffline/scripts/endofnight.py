@@ -698,7 +698,7 @@ def reduce_snapshot(snapshot, summary):
 
     cols = (
         'LENGTH_R1', 'LENGTH_R2', 'OFFSET_T', 'OFFSET_P', 'OFFSET_X', 'OFFSET_Y', 'PHYSICAL_RANGE_T', 'PHYSICAL_RANGE_P',
-        'DEVICE_CLASSIFIED_NONFUNCTIONAL', 'FIBER_INTACT', 'LOCATION')
+        'DEVICE_CLASSIFIED_NONFUNCTIONAL', 'FIBER_INTACT', 'LOCATION', 'POS_NEIGHBORS')
     reduced = astropy.table.Table(snapshot[cols])
     reduced.meta = {}
     reduced.sort('LOCATION')
