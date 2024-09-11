@@ -48,7 +48,7 @@ def load_hwtable(
     if path is None:
         if os.getenv("NERSC_HOST") is not None:
             path = "/global/cfs/cdirs/desi/engineering/focalplane/hwtables"
-        elif os.getenv("DOS_HOST") is not None:
+        elif os.getenv("DOS_SITE") is not None:
             if expid >= 91163:
                 path = "/global/cfs/cdirs/desi/engineering/focalplane/hwtables"
             else:
