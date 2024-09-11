@@ -30,6 +30,7 @@ import fpoffline.db
 import fpoffline.fvc
 import fpoffline.const
 import fpoffline.util
+import fpoffline.hwtable
 
 
 def run(args):
@@ -564,6 +565,15 @@ def run(args):
         f"Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance."
     )
 
+    # Read and save move tables for these exposures.
+    hwtables_csv = output / f"hwtables-{args.night}.csv.gz"
+    if args.overwrite or not hwtables_csv.exists():
+        hwtables = read_hwtables(moves)
+        hwtables.to_csv(hwtables_csv, index=False, compression="gzip")
+        logging.info(f"Wrote {hwtables_csv.name} with {len(hwtables)} rows.")
+    else:
+        logging.info(f"Will not overwrite existing {hwtables_csv.name}")
+
     # Get and save latest spot (x,y) for each location.
     # last_obs = moves[np.isfinite(moves.obs_x) & np.isfinite(moves.obs_y)].groupby('location').last()
     last_obs = (
@@ -695,6 +705,19 @@ def run(args):
     summary.write(output / f"fp-{args.night}.ecsv", overwrite=True)
 
     return 0
+
+
+def read_hwtables(moves):
+    """Read the HW tables written for each exposure referenced in the moves table and combine into a single pandas dataframe."""
+    dfs = []
+    expids = moves.exposure_id.unique()
+    for expid in expids:
+        if expid == -1:
+            continue
+        df = fpoffline.hwtable.load_hwtable(int(expid))
+        df["exposure_id"] = expid
+        dfs.append(df)
+    return pd.concat(dfs, ignore_index=True)
 
 
 def find_bad_motors(
@@ -844,6 +867,7 @@ def reduce_snapshot(snapshot, summary):
         "DEVICE_CLASSIFIED_NONFUNCTIONAL",
         "FIBER_INTACT",
         "LOCATION",
+        "POS_NEIGHBORS",
     )
     reduced = astropy.table.Table(snapshot[cols])
     reduced.meta = {}
