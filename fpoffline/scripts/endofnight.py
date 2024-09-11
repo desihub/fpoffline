@@ -1020,7 +1020,7 @@ def main():
     host = None
     if os.getenv("NERSC_HOST") is not None:
         host = "nersc"
-    elif os.getenv("DOS_HOST") is not None:
+    elif os.getenv("DOS_SITE") is not None:
         host = "kpno"
 
     def hostpath(nersc_path, kpno_path):
