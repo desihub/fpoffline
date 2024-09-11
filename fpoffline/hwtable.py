@@ -50,7 +50,7 @@ def load_hwtable(
             path = "/global/cfs/cdirs/desi/engineering/focalplane/hwtables"
         elif os.getenv("DOS_SITE") is not None:
             if expid >= 91163:
-                path = "/global/cfs/cdirs/desi/engineering/focalplane/hwtables"
+                path = "/data/focalplane/fp_temp_files/"
             else:
                 path = "/data/msdos/focalplane/fp_temp_files/"
     if path is None:
