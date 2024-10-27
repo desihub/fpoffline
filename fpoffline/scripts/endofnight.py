@@ -1044,9 +1044,9 @@ def createAssetList(
                 data = json.load(fp)
                 nights = data["nights"]
                 logging.info(f"Loaded {len(nights)} previous nights")
-                # Always rescan the most recent night, in case it was not complete during the last run
-                lastNight = sorted(nights.keys())[-1]
-                del nights[lastNight]
+                # Ensure that keys are sorted and drop the most recent night,
+                # in case it was not complete during the last run.
+                nights = {night: nights[night] for night in sorted(nights.keys())[:-1]}
         except Exception as e:
             print(f"Failed to read previous asset list: {e}")
 
@@ -1058,9 +1058,6 @@ def createAssetList(
             break
         eonPath = EON / night
         if night in nights:
-            if "endofnight" in nights[night]:
-                nights[night]["EON"] = nights[night]["endofnight"]
-                del nights[night]["endofnight"]
             # Update EON flag if necessary
             if not nights[night]["EON"] and eonPath.exists():
                 logging.info(f"Recording new end-of-night processing for {night}")
