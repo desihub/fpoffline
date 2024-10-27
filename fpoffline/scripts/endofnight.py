@@ -7,6 +7,8 @@ import os
 import pathlib
 import datetime
 import math
+import re
+import json
 from ast import literal_eval as safe_eval
 
 import numpy as np
@@ -704,6 +706,14 @@ def run(args):
     summary.meta = dict(summary.meta)  # Don't use an OrderedDict
     summary.write(output / f"fp-{args.night}.ecsv", overwrite=True)
 
+    if args.update_assets:
+        logging.info("Updating assets list...")
+        name = args.parent_dir / args.assets_name
+        prev = name if name.exists() else None
+        createAssetList(
+            filename=name, DATA=args.data_dir, EON=args.parent_dir, prev=prev
+        )
+
     return 0
 
 
@@ -1015,6 +1025,65 @@ def get_calib(DB, at=None, verbose=True):
     return calib
 
 
+def createAssetList(
+    filename, DATA, EON, prev=None, startNight=20210101, stopNight=None
+):
+
+    rundate = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    # Get a sorted list of spectro/data/YYYYMMDD directories
+    dataNights = sorted(
+        (path.name for path in DATA.glob("????????") if nightPattern.match(path.name))
+    )
+
+    nights = {}
+    if prev is not None:
+        # Try to read any previous asset list
+        try:
+            with open(prev) as fp:
+                data = json.load(fp)
+                nights = data["nights"]
+                logging.info(f"Loaded {len(nights)} previous nights")
+                # Always rescan the most recent night, in case it was not complete during the last run
+                lastNight = sorted(nights.keys())[-1]
+                del nights[lastNight]
+        except Exception as e:
+            print(f"Failed to read previous asset list: {e}")
+
+    # Loop over spectro/data nights
+    for night in dataNights:
+        if startNight is not None and int(night) < startNight:
+            continue
+        if stopNight is not None and int(night) >= stopNight:
+            break
+        eonPath = EON / night
+        if night in nights:
+            if "endofnight" in nights[night]:
+                nights[night]["EON"] = nights[night]["endofnight"]
+                del nights[night]["endofnight"]
+            # Update EON flag if necessary
+            if not nights[night]["EON"] and eonPath.exists():
+                logging.info(f"Recording new end-of-night processing for {night}")
+                nights[night]["EON"] = True
+        else:
+            # Look for exposures with a positioning loop
+            expids = []
+            exptags = sorted((path.name for path in (DATA / night).glob("????????")))
+            for exptag in exptags:
+                fvcPath = DATA / night / exptag / f"fvc-{exptag}.fits.fz"
+                if fvcPath.exists():
+                    expids.append(int(exptag))
+            nights[night] = dict(expids=expids, EON=eonPath.exists())
+            logging.info(
+                f'Recording new night {night} with {len(expids)} positioning exposures and EON {nights[night]["EON"]}'
+            )
+
+    with open(filename, "w") as fp:
+        data = dict(nights=nights, rundate=rundate)
+        json.dump(data, fp)
+        logging.info(f"Wrote {len(nights)} nights to {filename} at {rundate}")
+
+
 def main():
 
     host = None
@@ -1125,6 +1194,15 @@ def main():
             "/data/focalplane/db.yaml",
         ),
         help="path of yaml file containing database connection parameters to use",
+    )
+    parser.add_argument(
+        "--update-assets", action="store_true", help="update asset list"
+    )
+    parser.add_argument(
+        "--assets-name",
+        type=str,
+        default="assets.json",
+        help="name of the assets list file",
     )
     parser.add_argument(
         "-v",
