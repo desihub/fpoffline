@@ -724,9 +724,12 @@ def read_hwtables(moves):
     for expid in expids:
         if expid == -1:
             continue
-        df = fpoffline.hwtable.load_hwtable(int(expid))
-        df["exposure_id"] = expid
-        dfs.append(df)
+        try:
+            df = fpoffline.hwtable.load_hwtable(int(expid))
+            df["exposure_id"] = expid
+            dfs.append(df)
+        except Exception as e:
+            print(e)
     return pd.concat(dfs, ignore_index=True)
 
 
@@ -1028,7 +1031,7 @@ def get_calib(DB, at=None, verbose=True):
 def createAssetList(
     filename, DATA, EON, prev=None, startNight=20210101, stopNight=None
 ):
-
+    nightPattern = re.compile('^20[1-3][0-9][0-1][0-9][0-3][0-9]$')
     rundate = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     # Get a sorted list of spectro/data/YYYYMMDD directories
