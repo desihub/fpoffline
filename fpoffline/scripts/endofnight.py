@@ -1,10 +1,19 @@
 import argparse
 try:
+    from DOSlib.util import obs_day
+    from DOSlib.join_instance import *
+    inst = f'desi_{obs_day()}'
+    try:
+        join_instance(inst, must_be_running=True)
+    except Exception as e:
+        print(f'Exception joining instance {inst}: {str(e)}')
     import DOSlib.logger as logging
     logging._init_logger(role='ENDOFNIGHT',use_sve=True)
-    logging.info('Using DOS logging')
+    rstring = 'Using DOS logging'
 except:
+    rstring = 'Not using DOS logging. Log messages will not be recorded'
     import logging
+logging.warn(f'{rstring}')
 import pdb
 import traceback
 import sys
@@ -1090,7 +1099,6 @@ def createAssetList(
 
 
 def main():
-
     host = None
     if os.getenv("NERSC_HOST") is not None:
         host = "nersc"
