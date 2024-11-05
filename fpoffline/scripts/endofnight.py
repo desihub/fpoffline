@@ -1,5 +1,10 @@
 import argparse
-import logging
+try:
+    import DOSlib.logger as logging
+    logging._init_logger(role='ENDOFNIGHT',use_sve=True)
+    logging.info('Using DOS logging')
+except:
+    import logging
 import pdb
 import traceback
 import sys
@@ -1221,16 +1226,25 @@ def main():
     args = parser.parse_args()
 
     # Configure logging.
-    if args.debug:
-        level = logging.DEBUG
-    elif args.verbose:
-        level = logging.INFO
+    if hasattr(logging,'DOSlib'):
+        if args.debug:
+            logging.setLevel='DEBUG'
+        if args.verbose:
+            logging.setLevel='INFO'
+        else:
+            logging.setLevel='WARNING'
     else:
-        level = logging.WARNING
-    logging.basicConfig(level=level, format="%(levelname)s %(message)s")
-
+        if args.debug:
+            level = logging.DEBUG
+        elif args.verbose:
+            level = logging.INFO
+        else:
+            level = logging.WARNING
+        logging.basicConfig(level=level, format="%(levelname)s %(message)s")
     try:
         retval = run(args)
+        if hasattr(logging,'exit'):
+            getattr(logging,'exit')()
         sys.exit(retval)
     except Exception as e:
         if args.traceback:
@@ -1245,3 +1259,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if hasattr(logging,'exit'):
+        getattr(logging,'exit')()
