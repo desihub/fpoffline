@@ -66,7 +66,10 @@ def run(args):
         raise RuntimeError(f"Non-existent parent_dir: {args.parent_dir}")
 
     # Create a night subdirectory if necessary.
-    output = args.parent_dir / str(args.night)
+    if str(args.night) in str(args.parent_dir):
+        output = args.parent_dir
+    else:
+        output = args.parent_dir / str(args.night)
     if not output.exists():
         logging.info(f"Creating {output}")
         output.mkdir()
@@ -717,15 +720,22 @@ def run(args):
     summary.meta["inspect_groups"] = groups
 
     # Save the summary table as ECSV (so the metadata is included)
-    summary.meta = dict(summary.meta)  # Don't use an OrderedDict
-    summary.write(output / f"fp-{args.night}.ecsv", overwrite=True)
-
+    try:
+        logging.info(f'Saving summary to fp-{args.night}.ecsv')
+        summary.meta = dict(summary.meta)  # Don't use an OrderedDict
+        summary.write(output / f"fp-{args.night}.ecsv", overwrite=True)
+    except Exception as e:
+        logging.error(f'Exception saving output: {str(e)}')
     if args.update_assets:
         logging.info("Updating assets list...")
-        name = args.parent_dir / args.assets_name
+        name = args.assets_dir / args.assets_name
+        if args.assets_dir != args.parent_dir:
+            cname = args.parent_dir / args.assets_name
+        else:
+            cname = None
         prev = name if name.exists() else None
         createAssetList(
-            filename=name, DATA=args.data_dir, EON=args.parent_dir, prev=prev
+            filename=name, DATA=args.data_dir, EON=args.parent_dir, prev=prev, copyname=cname
         )
 
     return 0
@@ -1043,8 +1053,7 @@ def get_calib(DB, at=None, verbose=True):
 
 
 def createAssetList(
-    filename, DATA, EON, prev=None, startNight=20210101, stopNight=None
-):
+        filename, DATA, EON, prev=None, startNight=20210101, stopNight=None, copyname=None):
     nightPattern = re.compile('^20[1-3][0-9][0-1][0-9][0-3][0-9]$')
     rundate = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -1096,6 +1105,10 @@ def createAssetList(
         data = dict(nights=nights, rundate=rundate)
         json.dump(data, fp)
         logging.info(f"Wrote {len(nights)} nights to {filename} at {rundate}")
+    if copyname is not None:
+        with open(copyname, "w") as fp:
+            json.dump(data, fp)
+            logging.info(f"Wrote {len(nights)} nights to {copyname}")
 
 
 def main():
@@ -1170,6 +1183,16 @@ def main():
             "/data/focalplane/endofnight",
         ),
         help="parent directory for per-night output directories",
+    )
+    parser.add_argument(
+        "--assets-dir",
+        type=pathlib.Path,
+        metavar="PATH",
+        default=hostpath(
+            "/global/cfs/cdirs/desi/engineering/focalplane/endofnight",
+            "/data/focalplane/endofnight",
+        ),
+        help="parent directory for assets list file",
     )
     parser.add_argument(
         "--data-dir",
@@ -1255,6 +1278,8 @@ def main():
             getattr(logging,'exit')()
         sys.exit(retval)
     except Exception as e:
+        if hasattr(logging,'exit'):
+            getattr(logging,'exit')()
         if args.traceback:
             # https://stackoverflow.com/questions/242485/starting-python-debugger-automatically-on-error
             extype, value, tb = sys.exc_info()
