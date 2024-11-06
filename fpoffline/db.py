@@ -1,7 +1,10 @@
 """Tools to query the online positioner databases.
 """
 import pathlib
-import logging
+try:
+    import DOSlib.logger as logging
+except:
+    import logging
 import io
 
 import numpy as np
