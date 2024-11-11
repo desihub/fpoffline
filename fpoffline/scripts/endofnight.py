@@ -1,8 +1,16 @@
 import argparse
+import sys
 try:
     from DOSlib.util import obs_day
     from DOSlib.join_instance import *
-    inst = f'desi_{obs_day()}'
+    options = sys.argv
+    if '--instance' in options:
+        index = options.index('--instance')
+        inst = options[index+1]
+        sys.argv.pop(index+1)
+        sys.argv.pop(index)
+    else:
+        inst = f'desi_{obs_day()}'
     try:
         join_instance(inst, must_be_running=True)
     except Exception as e:
@@ -16,7 +24,6 @@ except:
 logging.warn(f'{rstring}')
 import pdb
 import traceback
-import sys
 import os
 import pathlib
 import datetime
@@ -56,7 +63,10 @@ def run(args):
 
     if args.night is None:
         # Use yesterday's date by default.
-        args.night = int(
+        try:
+            args.night= int(obs_day())
+        except:
+            args.night = int(
             (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y%m%d")
         )
         logging.info(f"Using default night {args.night}")
@@ -157,7 +167,7 @@ def run(args):
     if args.setup_id is None:
         if len(setups) == 0:
             logging.error("Giving up with no setups.")
-            return -1
+            return -2
         args.setup_id = setups.id.min()
     summary.meta["setup_id"] = args.setup_id
     setup_exp = exps.query(f"id=={args.setup_id}")
