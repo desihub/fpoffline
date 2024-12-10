@@ -915,6 +915,11 @@ def reduce_snapshot(snapshot, summary):
         "FIBER_INTACT",
         "LOCATION",
         "POS_NEIGHBORS",
+        "KEEPOUT_EXPANSION_PHI_RADIAL",
+        "KEEPOUT_EXPANSION_THETA_RADIAL",
+        "KEEPOUT_EXPANSION_PHI_ANGULAR",
+        "KEEPOUT_EXPANSION_THETA_ANGULAR",
+        "CLASSIFIED_AS_RETRACTED",
     )
     reduced = astropy.table.Table(snapshot[cols])
     reduced.meta = {}
