@@ -15,6 +15,8 @@ setup(
     entry_points = {
         'console_scripts': [
             'endofnight=fpoffline.scripts.endofnight:main',
+            'update_offset_p=fpoffline.scripts.update_offset_p:main',
+            'revert_offset_p=fpoffline.scripts.revert_offset_p:main',
         ],
     }
 )
