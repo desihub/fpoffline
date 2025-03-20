@@ -21,7 +21,7 @@ try:
 except:
     rstring = 'Not using DOS logging. Log messages will not be recorded'
     import logging
-logging.warn(f'{rstring}')
+logging.warning(f'{rstring}')
 import pdb
 import traceback
 import os
@@ -915,6 +915,11 @@ def reduce_snapshot(snapshot, summary):
         "FIBER_INTACT",
         "LOCATION",
         "POS_NEIGHBORS",
+        "KEEPOUT_EXPANSION_PHI_RADIAL",
+        "KEEPOUT_EXPANSION_THETA_RADIAL",
+        "KEEPOUT_EXPANSION_PHI_ANGULAR",
+        "KEEPOUT_EXPANSION_THETA_ANGULAR",
+        "CLASSIFIED_AS_RETRACTED",
     )
     reduced = astropy.table.Table(snapshot[cols])
     reduced.meta = {}
@@ -1095,9 +1100,20 @@ def createAssetList(
         eonPath = EON / night
         if night in nights:
             # Update EON flag if necessary
-            if not nights[night]["EON"] and eonPath.exists():
-                logging.info(f"Recording new end-of-night processing for {night}")
-                nights[night]["EON"] = True
+            if not nights[night]["EON"]:
+                # We have the results in EON / night /
+                if eonPath.exists():
+                    nights[night]["EON"] = True
+                elif int(night) >= 20241201:
+                    # Look for results in DATA / night / EEEEEEEE /
+                    exptags = sorted((path.name for path in (DATA / night).glob("????????")))
+                    for exptag in exptags[::-1]:
+                        summaryPath = DATA / night / exptag / f"fp-{night}.ecsv"
+                        if summaryPath.exists():
+                            nights[night]["EON"] = int(exptag)
+                            break
+            if nights[night]["EON"]:
+                logging.info(f'Recording new end-of-night processing for {night}: {nights[night]["EON"]}')
         else:
             # Look for exposures with a positioning loop
             expids = []
@@ -1106,7 +1122,17 @@ def createAssetList(
                 fvcPath = DATA / night / exptag / f"fvc-{exptag}.fits.fz"
                 if fvcPath.exists():
                     expids.append(int(exptag))
-            nights[night] = dict(expids=expids, EON=eonPath.exists())
+            # Do we have EON results for this night?
+            eonValue = False
+            if eonPath.exists():
+                eonValue = True
+            elif int(night) >= 20241201:
+                for exptag in exptags[::-1]:
+                    summaryPath = DATA / night / exptag / f"fp-{night}.ecsv"
+                    if summaryPath.exists():
+                        eonValue = int(exptag)
+                        break
+            nights[night] = dict(expids=expids, EON=eonValue)
             logging.info(
                 f'Recording new night {night} with {len(expids)} positioning exposures and EON {nights[night]["EON"]}'
             )

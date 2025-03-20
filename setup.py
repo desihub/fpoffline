@@ -16,9 +16,11 @@ setup(
     install_requires=["numpy", "scipy", "fitsio", "pandas"],
     include_package_data=False,
     zip_safe=False,
-    entry_points={
-        "console_scripts": [
-            "endofnight=fpoffline.scripts.endofnight:main",
+    entry_points = {
+        'console_scripts': [
+            'endofnight=fpoffline.scripts.endofnight:main',
+            'update_offset_p=fpoffline.scripts.update_offset_p:main',
+            'revert_offset_p=fpoffline.scripts.revert_offset_p:main',
         ],
     },
 )
