@@ -51,7 +51,41 @@ nominal_P = np.array(
 
 def adjusted_keepouts(dR_T, dA_T, dR_P, dA_P, R1, R2,
                       is_linphi=False, linphi_dA=5, R1_nom=3, R2_nom=3):
+    """Get adjusted keepouts given positioner calibration parameters.
 
+    Parameters
+    ----------
+    dR_T : float
+        Radial expansion of theta keepout in mm
+    dA_T : float
+        Angular expansion of theta keepout in degrees
+    dR_P : float
+        Radial expansion of phi keepout in mm
+    dA_P : float
+        Angular expansion of phi keepout in degrees
+    R1 : float
+        Length of R1 in mm
+    R2 : float
+        Length of R2 in mm
+    is_linphi : bool
+        True if this is a recovered linear phi positioner. These are
+        treated specially in the petal code, and use keepouts where
+        dA_P is always set to at least linphi_dA, independent of
+        the calibration value.
+    linphi_dA : float
+        Minimum angular expansion of phi keepout in degrees
+    R1_nom : float
+        Nominal length of R1 in mm
+    R2_nom : float
+        Nominal length of R2 in mm
+
+    Returns
+    -------
+    tuple (poly_T, poly_P) where poly_T and poly_P are the adjusted keepouts
+    for theta and phi respectively. Each is a tuple of x and y coordinates.
+    The coordinates are in mm measured in the petal coordinate system, and
+    are relative to the corresponding arm's pivot point.
+    """
     poly_T = expanded_radially(nominal_T, dR_T)
     poly_T = expanded_angularly(poly_T, dA_T)
 
@@ -74,14 +108,17 @@ def adjusted_keepouts(dR_T, dA_T, dR_P, dA_P, R1, R2,
 
 
 def adjusted_keepouts_from_calib(calib, pos_id):
+    """Get adjusted keepouts from the a dump of the calibration DB for a given positioner.
+    The calib dump must be indexed by pos_id, e.g. obtained with
 
-    sel = calib.pos_id == pos_id
-    if not np.any(sel):
-        raise ValueError(f"POS_ID {pos_id} not found in calib")
-    dev = calib[sel]
-    if len(dev) != 1:
-        raise ValueError(f"POS_ID {pos_id} not unique in calib")
-    dev = dev.iloc[0]
+      calib = fpoffline.scripts.endofnight.get_calib(DB)
+      calib.set_index('pos_id', verify_integrity=True, inplace=True)
+
+    This should give the same answer as adjusted_keepouts_from_snapshot().
+    """
+    if pos_id not in calib.index:
+        raise ValueError(f"POS_ID {pos_id} not found in calib.index")
+    dev = calib.loc[pos_id]
 
     dR_T = dev.keepout_expansion_theta_radial
     dA_T = dev.keepout_expansion_theta_angular
@@ -94,7 +131,13 @@ def adjusted_keepouts_from_calib(calib, pos_id):
 
 
 def adjusted_keepouts_from_snapshot(snap, pos_id):
+    """Get adjusted keepouts from a snapshot of the calibration DB for a given positioner.
+    To obtain a snapshot, use e.g.
 
+        snap = fpoffline.io.get_snapshot()
+
+    This should give the same answer as adjusted_keepouts_from_calib().
+    """
     sel = snap['POS_ID'] == pos_id
     if not np.any(sel):
         raise ValueError(f"POS_ID {pos_id} not found in snapshot")
