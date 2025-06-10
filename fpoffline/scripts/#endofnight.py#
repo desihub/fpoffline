@@ -1,3 +1,5 @@
+
+
 import argparse
 import sys
 try:
@@ -100,7 +102,7 @@ def run(args):
 
     # Load the most recent database snapshot.
     snapshot, snap_time = fpoffline.io.get_snapshot(
-        astropy.time.Time(midnight, format="datetime"), path=args.snap_dir, maxage_days=14, 
+        astropy.time.Time(midnight, format="datetime"), path=args.snap_dir
     )
     snapshot["LOCATION"] = snapshot["PETAL_LOC"] * 1000 + snapshot["DEVICE_LOC"]
     snapshot.sort("LOCATION")
