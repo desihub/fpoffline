@@ -598,8 +598,11 @@ def run(args):
     hwtables_csv = output / f"hwtables-{args.night}.csv.gz"
     if args.overwrite or not hwtables_csv.exists():
         hwtables = read_hwtables(moves)
-        hwtables.to_csv(hwtables_csv, index=False, compression="gzip")
-        logging.info(f"Wrote {hwtables_csv.name} with {len(hwtables)} rows.")
+        if hwtables is not None:
+            hwtables.to_csv(hwtables_csv, index=False, compression="gzip")
+            logging.info(f"Wrote {hwtables_csv.name} with {len(hwtables)} rows.")
+        else:
+            logging.warning("No hwtables found!")
     else:
         logging.info(f"Will not overwrite existing {hwtables_csv.name}")
 
@@ -764,7 +767,7 @@ def read_hwtables(moves):
             dfs.append(df)
         except Exception as e:
             print(e)
-    return pd.concat(dfs, ignore_index=True)
+    return pd.concat(dfs, ignore_index=True) if dfs else None
 
 
 def find_bad_motors(
