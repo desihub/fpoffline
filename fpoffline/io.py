@@ -14,6 +14,7 @@ import fpoffline.scripts.endofnight
 
 
 FP_ENG = pathlib.Path('/global/cfs/cdirs/desi/engineering/focalplane')
+DATA = pathlib.Path('/global/cfs/cdirs/desi/spectro/data')
 
 
 def get_snapshot(timestamp=None, maxage_days=5, path=FP_ENG / 'calibration'):
@@ -84,37 +85,65 @@ def get_index(before=None, path=FP_ENG / 'PositionerIndexTable/index_files'):
     return table
 
 
-def load_endofnight(night, verbose=True, parent_dir=FP_ENG / 'endofnight'):
+def load_endofnight(night, assets='fp-{night}.ecsv,moves-{night}.csv.gz', parent_dir=FP_ENG / 'endofnight', path_only=False):
+    """Load end-of-night assets for a given night.
 
-    path = pathlib.Path(parent_dir)
-    if not path.exists():
-        raise ValueError('Non-existent parent_dir "{parent_dir}".')
-    path = path / str(night)
-    if not path.exists():
-        raise ValueError('No directory found for night {night}.')
+    The possible assets are:
+    - fp-{night}.ecsv: focal plane status from the offline dump used for fiber assignment during this night
+    - moves-{night}.csv.gz: moves data for the night (will be uncompressed using fpoffline.scripts.endofnight.uncompress_moves)
+    - calib-{night}.csv: any changes to focal plane calibration during this night (usually just changes to keepouts by FP setup)
+    - fvc-back-{night}.jpg: back-illuminated FVC image taken at the end of the night during the park robots script
+    - fvc-front-{night}.jpg: front-illuminated FVC image taken at the end of the night during the park robots script
+    - hwtables-{night}.csv.gz: dump of the hardware move tables used during the night
 
-    summary = path / f'fp-{night}.ecsv'
-    if not summary.exists():
-        print(f'WARNING: missing end-of-night summary {summary}')
-        summary = None
+    Parameters
+    ----------
+    night : str or int
+        Night to load, specified as YYYYMMDD.
+    assets : str
+        Comma-separated list of assets to load, selected from those listed above.
+        The night is substituted into the asset names for each night. A night is considered
+        to be available if all of the specified assets exist as files.
+    parent_dir : str or pathlib.Path
+        Directory containing subdirectories for each night with names YYYYMMDD.
+        The default is appropriate for NERSC.
+    path_only : bool
+        If True, return the path to the directory containing the assets
+        instead of loading them.
+
+    Returns
+    -------
+    A list of loaded assets, or the path to the directory containing
+    the assets if path_only is True.
+    """
+    night = str(night)
+    assets = [ asset.format(night=night) for asset in assets.split(',') ]
+    path = pathlib.Path(parent_dir) / night
+    if path.exists():
+        found = [ (path / asset).exists() for asset in assets ]
+    elif (DATA / night).exists() and int(night) >= 20241201:
+        # Look for results in DATA / night / EEEEEEEE /
+        exptags = sorted((path.name for path in (DATA / night).glob("????????")))
+        for exptag in exptags[::-1]:
+            path = DATA / night / exptag
+            found = [ (path / asset).exists() for asset in assets ]
+            if any(found):
+                break
     else:
-        summary = astropy.table.Table.read(summary)
-
-    moves = path / f'moves-{night}.csv.gz'
-    if not moves.exists():
-        print(f'WARNING: missing moves table {moves}')
-        moves = None
-    else:
-        moves = pd.read_csv(moves)
-        fpoffline.scripts.endofnight.uncompress_moves(moves, night)
-
-    if verbose:
-        print(f'Found {np.count_nonzero(moves.blocked)} moves blocked for bad comms or collision avoidance.')
-        print(f'Found {np.count_nonzero(summary["FUNC"])} non-functional devices.')
-        inspect = summary['INSPECT']
-        groups = summary.meta['inspect_groups']
-        for bit, description in enumerate(groups):
-            nbit = np.count_nonzero(summary['INSPECT'] & (1 << bit) != 0)
-            print(f'Found {nbit} {description}.')
-
-    return summary, moves
+        raise ValueError(f'No data found for {night}')
+    if not all(found):
+        missing = [ asset for (asset,ok) in zip(assets,found) if not ok ]
+        raise ValueError(f'Missing some assets for {night}: {",".join(missing)}')
+    if path_only:
+        return path
+    loaded = [ ]
+    for asset in assets:
+        if asset.endswith('.ecsv'):
+            loaded.append(astropy.table.Table.read(path / asset))
+        elif asset.endswith('.csv') or asset.endswith('.csv.gz'):
+            loaded.append(pd.read_csv(path / asset, low_memory=False))
+            if asset.startswith('moves'):
+                fpoffline.scripts.endofnight.uncompress_moves(loaded[-1], night)
+        else:
+            raise ValueError(f'No loader implemented for {asset}')
+    return loaded
