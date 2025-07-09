@@ -100,7 +100,7 @@ def run(args):
 
     # Load the most recent database snapshot.
     snapshot, snap_time = fpoffline.io.get_snapshot(
-        astropy.time.Time(midnight, format="datetime"), path=args.snap_dir, maxage_days=14, 
+        astropy.time.Time(midnight, format="datetime"), path=args.snap_dir, maxage_days=14,
     )
     snapshot["LOCATION"] = snapshot["PETAL_LOC"] * 1000 + snapshot["DEVICE_LOC"]
     snapshot.sort("LOCATION")
@@ -887,7 +887,7 @@ def uncompress_moves(moves, night):
     # Convert 0/1/-1 values back to False/True/NA.
     for name in ("ctrl_enabled", "blocked"):
         isna = moves[name] == -1
-        moves[name] = moves[name].astype(bool)
+        moves[name] = moves[name].astype(boolean)
         moves.loc[isna, name] = pd.NA
     # Convert time_recorded from hours relative to noon_before back to timestamps.
     N = str(night)
