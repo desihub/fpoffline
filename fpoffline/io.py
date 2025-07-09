@@ -8,6 +8,8 @@ import numpy as np
 import astropy.time
 import astropy.table
 
+import fitsio
+
 import pandas as pd
 
 import fpoffline.scripts.endofnight
@@ -150,7 +152,7 @@ def load_endofnight(night, assets='fp-{night}.ecsv,moves-{night}.csv.gz', parent
 
 
 def load_coordinates(night, expid=None, merge_into=None, verbose=False,
-                    names=('EXP_', 'FPA_', 'REQ_', 'HACK_', 'F_D', 'T_D', 'D')):
+                    names=('EXP_', 'FPA_', 'REQ_', 'HACK_', 'TURB_', 'F_D', 'T_D', 'D')):
     """Read coordinates FITS files for one or more exposures of a night.
 
     The coordinates FITS files are documented at
