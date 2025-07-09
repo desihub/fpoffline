@@ -887,7 +887,7 @@ def uncompress_moves(moves, night):
     # Convert 0/1/-1 values back to False/True/NA.
     for name in ("ctrl_enabled", "blocked"):
         isna = moves[name] == -1
-        moves[name] = moves[name].astype(boolean)
+        moves[name] = moves[name].astype('boolean')
         moves.loc[isna, name] = pd.NA
     # Convert time_recorded from hours relative to noon_before back to timestamps.
     N = str(night)
