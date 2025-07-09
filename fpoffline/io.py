@@ -147,3 +147,80 @@ def load_endofnight(night, assets='fp-{night}.ecsv,moves-{night}.csv.gz', parent
         else:
             raise ValueError(f'No loader implemented for {asset}')
     return loaded
+
+
+def load_coordinates(night, expid=None, merge_into=None, verbose=False,
+                    names=('EXP_', 'FPA_', 'REQ_', 'HACK_', 'F_D', 'T_D', 'D')):
+    """Read coordinates FITS files for one or more exposures of a night.
+
+    The coordinates FITS files are documented at
+    https://docs.google.com/document/d/11n8k4VIGVaT_hCyVlE5joAZ3FxSAkELI7IdXdU-JsQE/edit#heading=h.5wcdpyb39uj1
+
+    Parameters
+    ----------
+    night : int or str
+        Night to process in the format YYYYMMDD.
+    expid : int or None
+        Single exposure id or None to process all exposures of a night.
+    merge_into : pandas DataFrame or None
+        Merge the results into this DataFrame, if specified, which must have existing columns
+        for location, exposure_id, and exposure_iter. Returns the merge result.
+    names : list of str
+        Coordinate names to extract, which must be present in the FITS file DATA HDU
+        table as <name>X_n and <name>Y_n with n=0,1 for the blind and correction moves.
+        The returned table will have corresponding columns fits_<name>x and fits_<name>y.
+
+    Returns
+    -------
+    pandas DataFrame
+    """
+    if expid is not None:
+        expids = [expid]
+    else:
+        expids = [int(file.name[12:20]) for file in (DATA / str(night)).glob('????????/coordinates-*.fits')]
+
+    coords = []
+    for expid in expids:
+        exptag = str(expid).zfill(8)
+        file = DATA / str(night) / exptag / f'coordinates-{exptag}.fits'
+        if not file.exists():
+            continue
+        try:
+            data = fitsio.read(str(file), ext='DATA')
+            swapped = data.byteswap().view(data.dtype.newbyteorder())
+            df = pd.DataFrame(swapped)
+            location = df.PETAL_LOC * 1000 + df.DEVICE_LOC
+        except Exception as e:
+            print(f'Unable to read {file}: {e}')
+            continue
+
+        for expiter in (0, 1):
+            iter_coords = pd.DataFrame()
+            iter_coords['location'] = location
+            iter_coords['exposure_id'] = expid
+            iter_coords['exposure_iter'] = expiter
+            missing = [ ]
+            try:
+                for name in names:
+                    for axis in 'XY':
+                        oldname = f'{name}{axis}_{expiter}'
+                        newname = f'fits_{name.lower()}{axis.lower()}'
+                        if oldname not in df:
+                            iter_coords[newname] = np.nan
+                            missing.append(oldname)
+                        else:
+                            df.rename(columns={oldname:'fits_'+oldname}, inplace=True)
+                            iter_coords[newname] = df['fits_'+oldname]
+                coords.append(iter_coords)
+            except Exception as e:
+                print(f'Failed to process {(expid,expiter)}: {e}')
+            if any(missing) and verbose:
+                print(f'{expid} {expiter} missing {",".join(missing)} for ')
+
+    if not coords:
+        return None
+    coords = pd.concat(coords, axis='index', ignore_index=True)
+    if merge_into is not None:
+        return pd.merge(merge_into, coords, how='left', on=['location', 'exposure_id', 'exposure_iter'])
+    else:
+        return coords
