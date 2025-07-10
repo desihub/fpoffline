@@ -14,7 +14,10 @@ setup(
         ]
     ),
     install_requires=["numpy", "scipy", "fitsio", "pandas"],
-    include_package_data=False,
+    include_package_data=True,
+    package_data={
+        "fpoffline.data": ["*.csv"]
+    },
     zip_safe=False,
     entry_points = {
         'console_scripts': [
