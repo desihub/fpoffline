@@ -389,6 +389,18 @@ def run(args):
     summary["LINPHI_CW"][idx] = full_calib.loc[linphi, "sz_cw_p"]
     summary["LINPHI_CCW"][idx] = full_calib.loc[linphi, "sz_ccw_p"]
 
+    # Look for linear theta motors and record their scales in the summary.
+    lintheta = full_calib.zeno_motor_t == True
+    logging.info(f"Found {np.count_nonzero(lintheta)} linear theta robots.")
+    lintheta_locs = full_calib[lintheta].index
+    summary["LINTHETA"] = False
+    summary["LINTHETA_CW"] = 0.0
+    summary["LINTHETA_CCW"] = 0.0
+    idx = np.searchsorted(summary["LOCATION"], lintheta_locs)
+    summary["LINTHETA"][idx] = True
+    summary["LINTHETA_CW"][idx] = full_calib.loc[lintheta, "sz_cw_t"]
+    summary["LINTHETA_CCW"][idx] = full_calib.loc[lintheta, "sz_ccw_t"]
+
     # Look for any calib updates since the snapshot.
     calib_csv = output / f"calib-{args.night}.csv"
     if args.overwrite or not calib_csv.exists():
