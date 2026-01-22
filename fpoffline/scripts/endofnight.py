@@ -737,6 +737,10 @@ def run(args):
     bit8 = np.isin(summary["LOCATION"], linphi_locs)
     summary["INSPECT"][bit8] |= 1 << 8
     groups.append("linphi: robot has linear phi motor")
+    # bit 9 is linear theta
+    bit9 = np.isin(summary["LOCATION"], lintheta_locs)
+    summary["INSPECT"][bit9] |= 1 << 9
+    groups.append("lintheta: robot has linear theta motor")
 
     # Print a summary.
     for bit, description in enumerate(groups):
